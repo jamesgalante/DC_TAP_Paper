@@ -1,0 +1,127 @@
+---
+title: "Power analysis"
+author: "James Galante"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+
+```{r}
+# Step 8: Create a Color Category Based on Specific Conditions
+merged_df_all <- merged_df_all %>%
+  mutate(
+    color_category = case_when(
+      significant == TRUE & Sceptre_pctChange < 0 & Regulated == TRUE ~ "purple",   # Sceptre and MAST
+      significant == TRUE & Sceptre_pctChange < 0 & Regulated == FALSE ~ "blue",  # Sceptre Only
+      Regulated == TRUE & significant == FALSE ~ "red",                            # MAST Only
+      TRUE ~ "grey"                                                                 # Neither
+    )
+  )
+
+# Verify the color_category assignment
+print(table(merged_df_all$color_category))
+```
+
+```{r}
+# Step 9: Correlation Analysis Between MAST_pctChange and Sceptre_pctChange
+
+# Calculate the Pearson correlation for all data
+correlation_pearson_all <- cor(merged_df_all$MAST_pctChange, merged_df_all$Sceptre_pctChange, use = "complete.obs")
+cat("Pearson Correlation between MAST_pctChange and Sceptre_pctChange (All):", correlation_pearson_all, "\n")
+
+# Calculate the Spearman correlation for all data
+correlation_spearman_all <- cor(merged_df_all$MAST_pctChange, merged_df_all$Sceptre_pctChange, method = "spearman", use = "complete.obs")
+cat("Spearman Correlation between MAST_pctChange and Sceptre_pctChange (All):", correlation_spearman_all, "\n")
+
+# Calculate the Pearson correlation for colored data
+colored_data <- merged_df_all %>% filter(color_category == "purple")
+
+correlation_pearson_colored <- cor(colored_data$MAST_pctChange, colored_data$Sceptre_pctChange, use = "complete.obs")
+cat("Pearson Correlation between MAST_pctChange and Sceptre_pctChange (Both):", correlation_pearson_colored, "\n")
+
+# Calculate the Spearman correlation for colored data
+correlation_spearman_colored <- cor(colored_data$MAST_pctChange, colored_data$Sceptre_pctChange, method = "spearman", use = "complete.obs")
+cat("Spearman Correlation between MAST_pctChange and Sceptre_pctChange (Both):", correlation_spearman_colored, "\n")
+```
+
+```{r}
+# Step 10: Visualize the Correlation with Conditional Coloring
+
+# Separate grey points and colored points
+grey_points <- merged_df_all %>% filter(color_category == "grey")
+colored_points <- merged_df_all %>% filter(color_category != "grey")
+
+# Create the plot
+p <- ggplot() +
+  # Plot grey points first (plotted beneath)
+  geom_point(data = grey_points,
+             aes(x = MAST_pctChange, y = Sceptre_pctChange),
+             color = "grey",
+             alpha = 1,
+             size = 1) +
+  # Add y ~ x reference line with separate mapping
+  geom_abline(
+      slope = 1, 
+      intercept = 0, 
+      linetype = "dashed", 
+      color = "red",
+      size = 0.7,
+      show.legend = TRUE,
+      aes(linetype = "y ~ x")
+  ) +
+  # Plot colored points on top
+  geom_point(data = colored_points,
+             aes(x = MAST_pctChange, y = Sceptre_pctChange, color = color_category),
+             alpha = 1,
+             size = 0.5) +
+  # Add linear regression line for all data
+  geom_smooth(data = merged_df_all,
+              aes(x = MAST_pctChange, y = Sceptre_pctChange),
+              method = "lm",
+              se = TRUE,
+              color = "black",
+              linetype = "solid") +
+  # Add linear regression line for colored data
+  geom_smooth(data = colored_data,
+              aes(x = MAST_pctChange, y = Sceptre_pctChange),
+              method = "lm",
+              se = TRUE,
+              color = "purple",
+              linetype = "dashed") +
+  # Customize labels and title
+  labs(
+    title = "Correlation b/t MAST and Sceptre Results for Gasperini",
+    subtitle = paste0("All Data (black): Pearson r = ", round(correlation_pearson_all, 3), 
+                      ", Spearman rho = ", round(correlation_spearman_all, 3), "\n",
+                      "Sig. Sceptre + MAST (purple): Pearson r = ", round(correlation_pearson_colored, 3), 
+                      ", Spearman rho = ", round(correlation_spearman_colored, 3)),
+    x = "MAST Percent Change (%)",
+    y = "Sceptre Percent Change (%)",
+    color = "Significance"
+  ) +
+  # Define manual colors and labels
+  scale_color_manual(
+    values = c("purple" = "purple", "blue" = "blue", "red" = "red"),
+    labels = c(
+      "purple" = "Sceptre and MAST",
+      "blue" = "Sceptre Only",
+      "red" = "MAST Only"
+    )
+  ) +
+  # Set axis limits
+  coord_cartesian(xlim = c(-90, 50), ylim = c(-90, 50)) +
+  # Apply theme
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.title = element_text(face = "bold"),
+    aspect.ratio = 1
+  )
+p
+```
+
+

@@ -1,0 +1,11 @@
+name: seurat_for_cell_ranger_outputs
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base=4.0
+  - r-seurat
+  - r-data.table
+  - python=3.8
+  - umap-learn
