@@ -1,6 +1,8 @@
 # config file containing parameters
 configfile: "config/config.yml"
 
+# Include all rules for designing the screen
+include: "rules/design_screen/k562_creating_targets.smk"
 
 # Include all rules for processing validation datasets
 include: "rules/process_validation_datasets/sceptre_setup.smk"
