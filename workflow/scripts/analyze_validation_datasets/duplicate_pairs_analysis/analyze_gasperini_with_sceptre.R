@@ -66,7 +66,7 @@ sceptre_object <- set_analysis_parameters(
   sceptre_object = sceptre_object,
   discovery_pairs = response_id_target_pairs,
   side = "both",
-  grna_integration_strategy = "union", # Think about doing singleton also to get per-guide effects (or bonferroni...?)
+  grna_integration_strategy = "union",
   control_group = "complement",
   multiple_testing_method = "BH",
   formula_object = new_formula

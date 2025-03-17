@@ -97,7 +97,7 @@ sceptre_object <- run_discovery_analysis(sceptre_object = sceptre_object)
 ### SAVE OUTPUT ===============================================================
 
 # Create output directory if needed
-per_guide_diffex_dir <- file.path(dirname(snakemake@output$discovery_results), "per_guide_diffex")
+per_guide_diffex_dir <- dirname(snakemake@output$discovery_results)
 if (!dir.exists(per_guide_diffex_dir)) {
   dir.create(per_guide_diffex_dir, recursive = TRUE)
 }

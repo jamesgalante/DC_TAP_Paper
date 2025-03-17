@@ -20,14 +20,14 @@ RANDOM_SEED = 69167
 #         "results/design_screen/k562_creating_targets/final_screen/loci_gene_info.tsv",
 #         "results/design_screen/k562_creating_targets/qc/loci_distributions.pdf"
 
-# download gencode annotations
-rule download_gencode_annotations:
-  output:"results/design_screen/annotation_files/gencode.v29.annotation.gtf.gz"
-  params:
-    url = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_29/gencode.v29.annotation.gtf.gz"
-  conda: "../../envs/r_process_crispr_data.yml"
-  shell:
-    "wget -O {output} {params.url}"
+# # download gencode annotations
+# rule download_gencode_annotations:
+#   output:"results/design_screen/annotation_files/gencode.v29.annotation.gtf.gz"
+#   params:
+#     url = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_29/gencode.v29.annotation.gtf.gz"
+#   conda: "../../envs/r_process_crispr_data.yml"
+#   shell:
+#     "wget -O {output} {params.url}"
 
 # Process TPM data to identify genes above threshold
 rule process_tpm_data:

@@ -16,6 +16,33 @@ rule distance_by_effect_size_plots:
     time = "1:00:00"
   script:
     "../../scripts/analyze_validation_datasets/dc_tap_plots/distance_by_effect_size_plots.R"
+    
+rule power_simulation_plots:
+  input:
+    k562_power_output = "results/process_validation_datasets/K562_DC_TAP_Seq/power_analysis/output_0.13gStd_Sceptre_perCRE.tsv",
+    wtc11_power_output = "results/process_validation_datasets/WTC11_DC_TAP_Seq/power_analysis/output_0.13gStd_Sceptre_perCRE.tsv",
+    gasperini_power_output = "resources/analyze_validation_datasets/power_simulation_plots/output_0.13gStd_MAST_perCRE.tsv.gz",
+    k562_tpm_file = "resources/analyze_validation_datasets/power_simulation_plots/TPM_from_NC_cells_only_P16_10x.txt"
+  output:
+    power_sim_results_line_plot = "results/analyze_validation_datasets/dc_tap_plots/power_plots/power_sim_results_line_plot.pdf",
+    power_sim_results_bar_plot = "results/analyze_validation_datasets/dc_tap_plots/power_plots/power_sim_results_bar_plot.pdf"
+  log: "results/analyze_validation_datasets/dc_tap_plots/logs/power_simulation_plots.log"
+  conda:
+    "../../envs/analyze_crispr_screen.yml"
+  resources:
+    mem = "8G",
+    time = "1:00:00"
+  script:
+    "../../scripts/analyze_validation_datasets/dc_tap_plots/power_simulation_plots.R"
+    
+    
+# Create a rule to calculate the effect size distribution of screens
+# basically showing that the median effect size is like 15% or something or wahtever it is (maybe this changes by TPM)
+# And then comparing the number of cells needed to detect a 15% change between different screens (perturb seq style v dc tap)
+      
+# Create a rule ranking (on xaxis) the encode score (~40 bins) and on the y axis the effect size 
+# Plot this with all significant pairs and without significant pairs
+  # Compare dc tap with other screens demonstrating that there are less false negatives
 
 
     

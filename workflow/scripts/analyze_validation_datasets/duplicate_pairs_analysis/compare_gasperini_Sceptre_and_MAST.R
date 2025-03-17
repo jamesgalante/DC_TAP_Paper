@@ -53,12 +53,7 @@ duplicates <- gene_mapping %>%
   group_by(gene_name) %>%
   filter(n() > 1) %>%
   ungroup()
-
-# Check if any of the gene names are represented in the Combined Training data
-if(any(duplicates$gene_name %in% combined_training$measuredGeneSymbol)){
-  warning("Some gene symbols map to multiple ENSEMBL IDs. These will result in multiple rows in the merged dataframe.")
-  print(duplicates)
-}
+# There are none
 
 
 ### ADD ENSEMBLE ID TO TRAINING ===============================================
@@ -71,11 +66,7 @@ combined_training_mapped <- combined_training %>%
 missing_response_ids <- combined_training_mapped %>%
   filter(is.na(response_id)) %>%
   distinct(measuredGeneSymbol)
-
-if(nrow(missing_response_ids) > 0){
-  warning("Some measuredGeneSymbols in combined_training did not have a corresponding ENSEMBL ID in perturb_sce.")
-  print(missing_response_ids)
-}
+# There are none
 
 
 ### MERGED AND FORMAT =========================================================
