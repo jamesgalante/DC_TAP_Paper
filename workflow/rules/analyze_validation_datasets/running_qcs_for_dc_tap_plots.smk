@@ -61,3 +61,29 @@ rule check_negative_control_results:
     time = "1:00:00"
   script:
     "../../scripts/analyze_validation_datasets/dc_tap_plots/check_negative_control_results.R"
+    
+rule compare_k562_effect_sizes_to_qPCR:
+  input:
+    cell_ranger_outputs = "resources/analyze_validation_datasets/running_qcs",
+    qPCR_results = "resources/analyze_validation_datasets/running_qcs/qPCR_results.xlsx",
+    extra_qPCRs = "resources/analyze_validation_datasets/running_qcs/extra_qPCR.tsv",
+    k562_singleton_diffex_results = "results/process_validation_datasets/K562_DC_TAP_Seq/singleton_differential_expression/results_run_discovery_analysis.rds"
+  output:
+    results_run_discovery_analysis = "results/analyze_validation_datasets/dc_tap_plots/qPCR_qc/results_run_discovery_analysis.rds"
+  params:
+  log: "results/analyze_validation_datasets/dc_tap_plots/logs/compare_k562_effect_sizes_to_qPCR.log"
+  conda:
+    "../../envs/analyze_crispr_screen.yml" # NEED TO REMAKE CONDA ENVIRONMENT FOR THIS RULE
+  resources:
+    mem = "8G",
+    time = "1:00:00"
+  script:
+    "../../scripts/analyze_validation_datasets/dc_tap_plots/compare_k562_effect_sizes_to_qPCR.R"   
+    
+  
+rule compare_replicates:
+  
+  
+
+
+  
