@@ -5,7 +5,7 @@
 # Saving image for debugging
 save.image(paste0("RDA_objects/find_duplicate_pairs.rda"))
 message("Saved Image")
-stop("Manually Stopped Program after Saving Image")
+# stop("Manually Stopped Program after Saving Image")
 
 # Open log file to collect messages, warnings, and errors
 log_filename <- snakemake@log[[1]]
@@ -20,15 +20,18 @@ message("Loading in packages")
 suppressPackageStartupMessages({
   library(tidyverse)
   library(GenomicRanges)
+  library(Seurat)
+  library(SingleCellExperiment)
 })
 
 message("Loading input files")
 gasperini_MAST_and_Sceptre <- readRDS(snakemake@input$gasperini_MAST_and_Sceptre)
 combined_validation <- read_tsv(snakemake@input$combined_validation) %>% filter(category == "K562 DC TAP Seq")
+gasperini_sceptre_results_w_symbol <- readRDS(snakemake@input$gasperini_sceptre_results_w_symbol)
 
 # Load for getting guide information
 perturb_sce <- readRDS(snakemake@input$perturb_sce)
-dctap_guide_targets <- read_tsv(snakemake@input$dctap_guide_targets)
+dctap_guide_targets <- read_tsv(snakemake@input$dc_tap_guide_targets)
 
 # Load the singleton differential expression results to get guide effect sizes
 singleton_dctap <- readRDS(snakemake@input$singleton_dctap)
@@ -97,12 +100,16 @@ ggsave(plot = gasperini_MAST_v_Sceptre_plot,
 
 ### SET UP GRANGES ============================================================
 
+# First define "Regulated" in gasperini_sceptre_results_w_symbol for downstream purpose
+gasperini_sceptre_results_w_symbol <- gasperini_sceptre_results_w_symbol %>%
+  mutate(Regulated = Sceptre_pctChange < 0 & significant == TRUE)
+
 # Create the GRanges object
-gr_gasperini <- GRanges(seqnames = gasperini_MAST_and_Sceptre$chrom,  
-                       ranges = IRanges(start = gasperini_MAST_and_Sceptre$chromStart,  
-                                        end = gasperini_MAST_and_Sceptre$chromEnd),  
-                       measuredGeneSymbol = gasperini_MAST_and_Sceptre$measuredGeneSymbol,  
-                       training = gasperini_MAST_and_Sceptre)
+gr_gasperini <- GRanges(seqnames = gasperini_sceptre_results_w_symbol$chrom,  
+                       ranges = IRanges(start = gasperini_sceptre_results_w_symbol$chromStart,  
+                                        end = gasperini_sceptre_results_w_symbol$chromEnd),  
+                       measuredGeneSymbol = gasperini_sceptre_results_w_symbol$gene_name,  
+                       training = gasperini_sceptre_results_w_symbol)
 
 gr_dc_tap <- GRanges(seqnames = combined_validation$chrom, 
                      ranges = IRanges(start = combined_validation$chromStart, 
@@ -132,7 +139,7 @@ duplicates <- dc_tap_duplicates %>%
 
 # Without filtering for ValidConnection == TRUE, there are a few points that don't seem to line up between Gasperini and DC TAP
 comparing_all_duplicate_pairs <- duplicates %>%
-  ggplot(aes(y = dc_tap.EffectSize * 100, x = training.Sceptre_pctChange)) +
+  ggplot(aes(y = dc_tap.EffectSize * 100, x = (2^training.log_2_fold_change - 1) * 100)) +
   geom_point(size = 0.8) +
   geom_abline(slope = 1, intercept = 0, color = "black", linetype = "dashed") +
   geom_smooth(method = "lm", se = FALSE) +
@@ -163,7 +170,7 @@ comparing_valid_duplicate_pairs <- duplicates %>%
   geom_smooth(method = "lm", se = FALSE) +
   labs(
     title = "Comparing Duplicate Pairs",
-    subtitle = "Filtered by ENCODE standards",
+    subtitle = "DC TAP ENCODE filtered",
     y = "K562 DC TAP Seq Effect Size (%)",
     x = "Gasperini et al. 2019 Effect Size (%)"
   ) +
@@ -219,29 +226,34 @@ ggsave(plot = comparing_all_duplicate_pairs_with_color,
 ### SUBSETTING WEIRD PAIRS ====================================================
 
 # All the pairs where the "color_code" is "red" are significant in Gasperini but not in DC TAP - let's look at these on a guide level
-targets <- duplicates %>% filter(dc_tap.Regulated == FALSE & training.Regulated == TRUE) %>% pull(training.grna_target)
+targets <- duplicates %>% filter(dc_tap.Regulated != training.Regulated) %>% pull(training.grna_target)
 
 # Now we can get the coordinates of each of these guides for gasperini
 gasp_grna_perts <- rowData(altExp(perturb_sce, "grna_perts"))
 gasp_guide_information <- as.tibble(gasp_grna_perts) %>% filter(target_name %in% targets) %>% select(chr, start, end, name, target_name)
 
+# Save bed file
+write_tsv(gasp_guide_information %>% select(chr, start, end), snakemake@output$gasperini_guides_bed_file, col_names = FALSE)
+
 # Now let's create a bed file so we can liftOver then visualize these guides in IGV
 # The resulting liftedOver coordinates are here:
 # chr8	129689617	129689640
 # chr11	5280667	5280690
+# chr11	5288289	5288312
 # chr11	5280569	5280592
 # chr2	55140483	55140506
 # chr2	55140626	55140649
 # chr11	5280877	5280900
 # chr11	5280666	5280689
 # chr11	5280802	5280825
+# chr11	5284680	5284703
 # chr8	129689534	129689557
 # chr2	55140795	55140818
 # chr2	55140665	55140688
 
 # We can also get all guide information on the dc tap guides
 dctap_targets <- duplicates %>% 
-  filter(dc_tap.Regulated == FALSE & training.Regulated == TRUE) %>%
+  filter(dc_tap.Regulated != training.Regulated) %>%
   mutate(dc_tap.grna_target = gsub("^[^|]*\\|([^:]*:[^:]*-[^:]*)[:].*", "\\1", dc_tap.name)) %>%
   pull(dc_tap.grna_target)
 dctap_guide_information <- dctap_guide_targets %>% filter(target_name %in% dctap_targets) %>% select(chr, start, end, name, target_name)
@@ -249,70 +261,71 @@ dctap_guide_information <- dctap_guide_targets %>% filter(target_name %in% dctap
 
 ### FOCUSING IN ON HBD ========================================================
 
-# Now we can focus in on the chr11 - HBD EG pair and understand on a guide level what the effect sizes are
-gasperini_guides <- gasp_guide_information %>% filter(target_name == "chr11:5301716-5302216") %>% pull(name)
-dctap_guides <- dctap_guide_information %>% filter(target_name == "chr11:5301767-5302068") %>% pull(name)
+plot_guide_effects <- function(gasp_target, dc_target, singleton_gasperini, singleton_dctap,
+                               gasp_guide_info, dctap_guide_info, gene_id, gene_name) {
+  
+  # Get guides for these regions
+  g_guides <- gasp_guide_info %>% filter(target_name == gasp_target) %>% pull(name)
+  d_guides <- dctap_guide_info %>% filter(target_name == dc_target) %>% pull(name)
+  
+  # Get data for these guides targeting our gene
+  g_data <- singleton_gasperini %>% 
+    filter(grna_id %in% g_guides, response_id == gene_id) %>%
+    mutate(pctChange = 2^log_2_fold_change - 1) %>%
+    left_join(gasp_guide_info, by = c("grna_id" = "name")) %>%
+    mutate(midpoint = (start + end)/2, dataset = "Gasperini")
+  
+  d_data <- singleton_dctap %>% 
+    filter(grna_id %in% d_guides, response_id == gene_id) %>%
+    mutate(pctChange = 2^log_2_fold_change - 1) %>%
+    left_join(dctap_guide_info, by = c("grna_id" = "name")) %>%
+    mutate(midpoint = (start + end)/2, dataset = "DCTAP")
+  
+  # Combine and plot
+  combined_data <- bind_rows(g_data, d_data) %>% filter(!is.na(pctChange))
+  
+  ggplot(combined_data, aes(x = midpoint, y = pctChange, color = dataset)) +
+    geom_errorbarh(aes(xmin = start, xmax = end), height = 0.02, alpha = 0.6) +
+    geom_point(aes(shape = significant), size = 2, alpha = 0.8) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+    scale_color_manual(values = c("Gasperini" = "red", "DCTAP" = "blue")) +
+    scale_shape_manual(values = c("TRUE" = 17, "FALSE" = 16)) +
+    labs(
+      title = paste0(gene_name, " gRNA Effect Sizes"),
+      x = "Genomic Position",
+      y = "Percent Change"
+    ) +
+    theme_minimal()
+}
 
-# Let's look at these guides in the singleton differential expression analysis when they're targeting HBD (ENSG00000223609)
-gasp_hbd_guides <- singleton_gasperini %>% filter(grna_id %in% gasperini_guides) %>% filter(response_id == "ENSG00000223609")
-dctap_hbd_guides <- singleton_dctap %>% filter(grna_id %in% dctap_guides) %>% filter(response_id == "ENSG00000223609")
+# First pair (a lot of gasp guides)
+hbd_plot1 <- plot_guide_effects(
+  gasp_target = "chr11:5301716-5302216", dc_target = "chr11:5301767-5302068", 
+  singleton_gasperini = singleton_gasperini, singleton_dctap = singleton_dctap,
+  gasp_guide_info = gasp_guide_information, dctap_guide_info = dctap_guide_information,
+  gene_id = "ENSG00000223609", gene_name = "HBD"
+)
 
-# Convert log2FC to pctChange
-gasp_hbd_guides <- gasp_hbd_guides %>% mutate(pctChange = 2^log_2_fold_change - 1)
-dctap_hbd_guides <- dctap_hbd_guides %>% mutate(pctChange = 2^log_2_fold_change - 1)
+# Second pair (gasp guide off center)
+hbd_plot2 <- plot_guide_effects(
+  gasp_target = "chr11:5305780-5306280", dc_target = "chr11:5305872-5306173", 
+  singleton_gasperini = singleton_gasperini, singleton_dctap = singleton_dctap,
+  gasp_guide_info = gasp_guide_information, dctap_guide_info = dctap_guide_information,
+  gene_id = "ENSG00000223609", gene_name = "HBD"
+)
 
-# Merge the guide information with the sceptre results
-gasp_hbd_guides <- gasp_hbd_guides %>% left_join(gasp_guide_information, by = c("grna_id" = "name"))
-dctap_hbd_guides <- dctap_hbd_guides %>% left_join(dctap_guide_information, by = c("grna_id" = "name"))
+# Third pair (one gasp guide on center)
+hbd_plot3 <- plot_guide_effects(
+  gasp_target = "chr11:5309248-5309748", dc_target = "chr11:5309369-5309670", 
+  singleton_gasperini = singleton_gasperini, singleton_dctap = singleton_dctap,
+  gasp_guide_info = gasp_guide_information, dctap_guide_info = dctap_guide_information,
+  gene_id = "ENSG00000223609", gene_name = "HBD"
+)
 
-
-### PLOTTING HBD ==============================================================
-
-# Calculate midpoint between start and end for each dataset
-gasp_hbd_guides <- gasp_hbd_guides %>% mutate(midpoint = (start + end) / 2)
-dctap_hbd_guides <- dctap_hbd_guides %>% mutate(midpoint = (start + end) / 2)
-
-# Combine datasets for plotting with dataset labels
-gasp_hbd_guides$dataset <- "Gasperini"
-dctap_hbd_guides$dataset <- "DCTAP"
-
-# Remove NA row from dctap_hbd_guides
-dctap_hbd_guides <- dctap_hbd_guides %>% filter(!is.na(pctChange))
-
-# Combine the datasets
-combined_data <- bind_rows(gasp_hbd_guides, dctap_hbd_guides)
-
-# Create the plot
-hbd_guide_effect_sizes <- ggplot(combined_data, aes(x = midpoint, y = pctChange, color = dataset)) +
-  # Add horizontal error bars to show the span of each guide
-  geom_errorbarh(aes(xmin = start, xmax = end), height = 0.02, alpha = 0.6) +
-  # Add points at the midpoint
-  geom_point(aes(shape = significant), size = 2, alpha = 0.8) +
-  # Add horizontal line at y = 0
-  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  # Set colors and shapes
-  scale_color_manual(values = c("Gasperini" = "red", "DCTAP" = "blue")) +
-  scale_shape_manual(values = c("TRUE" = 17, "FALSE" = 16)) +
-  # Labels
-  labs(
-    title = "gRNA Effect Sizes by Genomic Position",
-    subtitle = "Targeting region chr11:5301767-5302068",
-    x = "Genomic Position",
-    y = "Percent Change",
-    color = "Dataset",
-    shape = "Significant"
-  ) +
-  # Theme customization
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    panel.grid.minor = element_blank()
-  )
-
-# Save the plot
-ggsave(plot = hbd_guide_effect_sizes, 
-       filename = snakemake@output$hbd_guide_effect_sizes,
-       device = "pdf", height = 5, width = 6)
+# Save the plots if needed
+ggsave(filename = file.path(dirname(snakemake@output$comparing_all_duplicate_pairs_with_color), "hbd_plot1.pdf"), plot = hbd_plot1, width = 6, height = 5)
+ggsave(filename = file.path(dirname(snakemake@output$comparing_all_duplicate_pairs_with_color), "hbd_plot2.pdf"), plot = hbd_plot2, width = 6, height = 5)
+ggsave(filename = file.path(dirname(snakemake@output$comparing_all_duplicate_pairs_with_color), "hbd_plot3.pdf"), plot = hbd_plot3, width = 6, height = 5)
 
 
 ### FOCUSING IN ON CHR8 LOCUS ========================================================
@@ -340,10 +353,69 @@ dctap_chr8_guides <- singleton_dctap %>%
 # It seems like dctap guides were ineffective for this locus - very few n_nonzero_trt cells
 
 
-### SAVE OUTPUT ===============================================================
+### MAKE FINAL PLOT ===========================================================
 
-# Save output files
-message("Saving output files")
+# Let's make the final plot with all pairs that are significant between both gasperini and dc tap
+# Let's plot the correlation R value
+# Let's color gray if non significant and darkblue if significant in both
+# Create the final correlation plot
+final_duplicate_pairs_plot <- duplicates %>%
+  # Apply ValidConnection filter
+  # filter(dc_tap.ValidConnection == TRUE) %>%
+  # Only keep points where both are significant or both not significant
+  filter((dc_tap.Regulated == TRUE & training.Regulated == TRUE) | 
+           (dc_tap.Regulated == FALSE & training.Regulated == FALSE)) %>%
+  # Create color coding
+  mutate(significance = if_else(dc_tap.Regulated == TRUE & training.Regulated == TRUE, 
+                                "Both", "Neither")) %>%
+  # Calculate correlation for significant points only
+  {
+    data <- .
+    
+    # Calculate r value only for significant points
+    sig_points <- data %>% filter(significance == "Both")
+    if(nrow(sig_points) > 1) {
+      r_value <- cor(sig_points$dc_tap.EffectSize * 100, 
+                     sig_points$training.Sceptre_pctChange, 
+                     method = "pearson", 
+                     use = "complete.obs")
+    } else {
+      r_value <- NA
+    }
+    
+    # Create the plot
+    ggplot(data, aes(y = dc_tap.EffectSize * 100, x = training.Sceptre_pctChange, 
+                     color = significance)) +
+      geom_point(size = 1.4) +
+      geom_abline(slope = 1, intercept = 0, color = "black", linetype = "dashed") +
+      # Add R value directly on the plot
+      annotate("text", x = -45, y = 15, 
+               label = paste0("r = ", round(r_value, 3)), 
+               hjust = 0, size = 3.5) +
+      labs(
+        title = "",
+        y = "K562 DC TAP Seq Effect Size (%)",
+        x = "Gasperini et al. 2019 Effect Size (%)",
+        color = "Regulated Status"
+      ) +
+      scale_color_manual(
+        values = c("Both" = "darkblue", "Neither" = "grey70")
+      ) +
+      theme_bw() +
+      ylim(-50, 20) +
+      xlim(-50, 20) +
+      theme(
+        aspect.ratio = 1,
+        panel.grid.minor = element_blank(),
+        legend.position = "right",
+        panel.grid = element_blank()
+      )
+  }
+
+# Save the plot
+ggsave(plot = final_duplicate_pairs_plot,
+       filename = file.path(dirname(snakemake@output$comparing_all_duplicate_pairs_with_color), "final_correlation_plot.pdf"),
+       device = "pdf", height = 4, width = 4.5)
 
 
 ### CLEAN UP ==================================================================

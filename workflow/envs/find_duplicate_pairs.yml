@@ -1,0 +1,13 @@
+name: find_duplicate_pairs
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+  - r
+dependencies:
+  - r-base=4.4
+  - r-seurat
+  - r-data.table
+  - r-tidyverse
+  - bioconductor-singlecellexperiment
+  - bioconductor-genomicranges

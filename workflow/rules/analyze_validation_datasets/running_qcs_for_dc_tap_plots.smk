@@ -65,11 +65,15 @@ rule check_negative_control_results:
 rule compare_k562_effect_sizes_to_qPCR:
   input:
     cell_ranger_outputs = "resources/analyze_validation_datasets/running_qcs",
-    qPCR_results = "resources/analyze_validation_datasets/running_qcs/qPCR_results.xlsx",
+    qPCR_results = "resources/analyze_validation_datasets/running_qcs/qPCR_results.tsv",
     extra_qPCRs = "resources/analyze_validation_datasets/running_qcs/extra_qPCR.tsv",
     k562_singleton_diffex_results = "results/process_validation_datasets/K562_DC_TAP_Seq/singleton_differential_expression/results_run_discovery_analysis.rds"
   output:
-    results_run_discovery_analysis = "results/analyze_validation_datasets/dc_tap_plots/qPCR_qc/results_run_discovery_analysis.rds"
+    results_run_discovery_analysis = "results/analyze_validation_datasets/dc_tap_plots/qPCR_qc/results_run_discovery_analysis.rds",
+    comparison_of_all_by_type = "results/analyze_validation_datasets/dc_tap_plots/qPCR_qc/comparison_of_all_by_type.pdf",
+    comparison_positive_controls = "results/analyze_validation_datasets/dc_tap_plots/qPCR_qc/comparison_positive_controls.pdf",
+    comparison_others = "results/analyze_validation_datasets/dc_tap_plots/qPCR_qc/comparison_others.pdf",
+    formatted_qPCR_Sceptre_table = "results/analyze_validation_datasets/dc_tap_plots/qPCR_qc/formatted_qPCR_Sceptre_table.tsv"
   params:
   log: "results/analyze_validation_datasets/dc_tap_plots/logs/compare_k562_effect_sizes_to_qPCR.log"
   conda:

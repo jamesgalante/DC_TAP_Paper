@@ -2,8 +2,8 @@
 
 # Hardcoded configuration parameters
 TPM_DATA = "resources/design_screen/k562_creating_targets/tpm.csv"
-GENOME_ANNOTATION = "results/design_screen/annotation_files/gencode.v29.annotation.gtf.gz"
-DNASE_PEAKS = "resources/design_screen/k562_creating_targets/ENCFF185XRG_w_ENCFF325RTP_q30_sorted.txt"
+GENOME_ANNOTATION = "results/design_screen/gencode.v29.annotation.gtf.gz"
+DNASE_PEAKS = "results/design_screen/ENCFF185XRG_w_ENCFF325RTP_q30_sorted.txt"
 TPM_THRESHOLD = 50
 LOCUS_WIDTH = 2000000
 DHS_THRESHOLD = 20
@@ -11,6 +11,82 @@ KB100_THRESHOLD = 10
 Q75_THRESHOLD = 20
 NUM_LOCI = 25
 RANDOM_SEED = 69167
+
+
+# download gencode annotations
+rule download_gencode_files:
+  output: 
+    v29 = "results/design_screen/gencode.v29.annotation.gtf.gz",
+    v26lift37 = "results/design_screen/gencode.v26lift37.annotation.gtf.gz"
+  params:
+    v29_url = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_29/gencode.v29.annotation.gtf.gz",
+    v26lift37_url = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/GRCh37_mapping/gencode.v26lift37.annotation.gtf.gz"
+  conda: "../../envs/r_process_crispr_data.yml"
+  shell:
+    """
+    wget -O {output.v29} {params.v29_url}
+    wget -O {output.v26lift37} {params.v26lift37_url}
+    """
+
+
+
+rule download_dnase_files:
+  output:
+    dnase_bed = "results/design_screen/ENCFF185XRG.bed",
+    dnase_bam = "results/design_screen/ENCFF325RTP.bam"
+  params:
+    dnase_bed_url = "https://www.encodeproject.org/files/ENCFF185XRG/@@download/ENCFF185XRG.bed.gz",
+    dnase_bam_url = "https://www.encodeproject.org/files/ENCFF325RTP/@@download/ENCFF325RTP.bam"
+  shell:
+    """
+    # Create output directory only if it doesn't exist
+    mkdir -p results/design_screen
+    
+    # Download files directly to the output directory
+    wget -nc {params.dnase_bed_url} -O results/design_screen/ENCFF185XRG.bed.gz
+    wget -nc {params.dnase_bam_url} -O results/design_screen/ENCFF325RTP.bam
+    
+    # Uncompress the BED file
+    gunzip -c results/design_screen/ENCFF185XRG.bed.gz > {output.dnase_bed}
+    """
+    
+rule analyze_dnase_coverage:
+  input:
+    dnase_bed = "results/design_screen/ENCFF185XRG.bed",
+    dnase_bam = "results/design_screen/ENCFF325RTP.bam"
+  output:
+    dnase_counts = "results/design_screen/ENCFF185XRG_w_ENCFF325RTP_q30_sorted.txt"
+  resources:
+    mem = "64G",  # Reduced from 180G since sorting should make it more efficient
+    time = "5:00:00"
+  shell:
+    """
+    # Load modules
+    ml load system
+    ml load biology
+    ml load bedtools/2.30.0
+    ml load samtools 
+    
+    # Create filtered and sorted BAM
+    # samtools view -q 30 -b {input.dnase_bam} | samtools sort -o results/design_screen/ENCFF325RTP.q30.sorted.bam
+    
+    # Index the sorted BAM file
+    # samtools index results/design_screen/ENCFF325RTP.q30.sorted.bam
+    
+    # Create a chromosome order file from the BAM
+    tmp_chr_order=tmp_chr_order_dnase.txt
+    samtools view -H results/design_screen/ENCFF325RTP.q30.sorted.bam | grep -P '^@SQ' | cut -f 2,3 | \
+    awk 'BEGIN{{OFS="\t"}}{{split($1, a, ":"); split($2, b, ":"); print a[2], b[2]}}' > $tmp_chr_order
+    
+    # Sort the BED file using the BAM chromosome order and pipe to bedtools
+    bedtools sort -faidx $tmp_chr_order -i {input.dnase_bed} | \
+    bedtools coverage -sorted -g $tmp_chr_order -a stdin -b results/design_screen/ENCFF325RTP.q30.sorted.bam > {output.dnase_counts}
+    
+    # Clean up
+    rm $tmp_chr_order
+    """
+
+
 
 # Define the final outputs that should be created
 # rule all:

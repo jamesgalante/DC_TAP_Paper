@@ -64,7 +64,7 @@ sceptre_object <- import_data(
 message("Setting analysis parameters")
 sceptre_object <- set_analysis_parameters(
   sceptre_object = sceptre_object,
-  discovery_pairs = response_id_target_pairs,
+  discovery_pairs = response_id_target_pairs %>% select(-strand) %>% dplyr::rename(grna_target = "grna_group"),
   side = "both",
   grna_integration_strategy = "union",
   control_group = "complement",

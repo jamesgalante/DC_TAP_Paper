@@ -87,10 +87,28 @@ merged_df_all <- merged_df_all %>%
   )
 
 
+### CREATE THE SCEPTRE VERSION ONLY ===========================================
+
+# When merging with the combined_training, we're essentially deleting any sceptre pairs that don't match
+# To avoid this and keep all Sceptre pairs, let's just merge the gasperini sceptre results with selected columns from merged_df_all so that we can get the hg38 conversion
+# And let's convert the Log2FC to pctChange
+gasperini_sceptre_results_w_symbol <- gasperini_sceptre_results %>%
+  left_join(merged_df_all %>% 
+              select(chrom, chromStart, chromEnd, grna_target) %>%
+              group_by(grna_target) %>%
+              dplyr::slice(1), 
+            by = "grna_target") %>%
+  left_join(gene_mapping, by = "response_id") %>%
+  mutate(Sceptre_pctChange = (2^log_2_fold_change - 1) * 100) %>%
+  filter(!is.na(chrom), !is.na(Sceptre_pctChange))
+
+
 ### SAVE OUTPUT ===============================================================
 
 # Write the merged object for later plotting
 saveRDS(merged_df_all, snakemake@output$gasperini_MAST_and_Sceptre)
+saveRDS(gasperini_sceptre_results_w_symbol, snakemake@output$gasperini_sceptre_results_w_symbol)
+
 
 ### CLEAN UP ==================================================================
 

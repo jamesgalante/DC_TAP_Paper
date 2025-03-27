@@ -25,12 +25,14 @@ suppressPackageStartupMessages({
   library(rtracklayer)
   library(readr)
   library(tidyverse)
+  source(file.path(snakemake@scriptdir, "../../process_validation_datasets/sceptre_setup/gene_target_pairing_functions.R"))
 })
 
 # Load input files
 message("Loading input files")
 perturb_sce <- readRDS(snakemake@input$perturb_sce)
 crispr_pipeline_output <- read_tsv(snakemake@input$crispr_pipeline_output)
+annot <- import(snakemake@input$annot)
 
 
 ### CREATE SCEPTRE INPUT FILES ================================================
@@ -44,9 +46,21 @@ binarized_guide_counts <- assay(altExp(perturb_sce, "grna_perts"), "perts")
 # Create the response id - target pairs file
 response_id_target_pairs <- crispr_pipeline_output %>% select(perturbation, gene, target_type)
 
-# Create the guide - target pairs file
-guide_target_pairs <- as.data.frame(rowData(altExp(perturb_sce, "grna_perts"))) %>% dplyr::select(name, target_name)
-rownames(guide_target_pairs) <- NULL
+# Create the guide - target pairs file and filter out positive controls
+guide_targets <- as.data.frame(rowData(altExp(perturb_sce, "grna_perts"))) %>% filter(target_type == "enh")
+rownames(guide_targets) <- NULL
+guide_target_pairs <- guide_targets %>% dplyr::select(name, target_name)
+
+
+### CUSTOM RESPONSE_ID_TARGET_PAIRS ===========================================
+
+# One option is to only use pairs that were tested in the original gasperini analysis
+# Another option is to remake the pairs to be tested with a larger distance threshold (2Mb) rather than 1Mb
+
+# Need to have some form of "guide_targets" to put into pipeline
+output <- find_genes_near_targets(guide_targets = guide_targets, annotation_file = annot, gene_ids = rownames(raw_counts), max_distance = 2e6)
+response_id_target_pairs <- output[[1]]
+report <- output[[2]]
 
 
 ### FILTERING =================================================================
@@ -62,18 +76,7 @@ all(response_id_target_pairs$perturbation %in% guide_target_pairs$target_name)
 # no
 
 # Which perturbations are in the response-target file but not in the guide-target file
-unique(response_id_target_pairs %>% filter(!perturbation %in% guide_target_pairs$target_name) %>% select(perturbation))
-# chr8:101912497-101912997
-
-# Let's remove this from the response_id_target_pairs file 
-# If Sceptre tries to test a perturbation-gene pair that doesn't exist, it will throw an error
-# Let's also remove all positive controls from the response_id_target_pairs file and subset the response_id and target columns
-# We can also rename the columns to "grna_target" and "response_id" for Sceptre
-response_id_target_pairs <- response_id_target_pairs %>% 
-  filter(perturbation != "chr8:101912497-101912997") %>%
-  filter(target_type == "enh") %>% 
-  select(perturbation, gene) %>%
-  dplyr::rename(grna_target = perturbation, response_id = gene)
+unique(response_id_target_pairs %>% filter(!grna_group %in% guide_target_pairs$target_name) %>% select(grna_group))
 
 #### ==========
   

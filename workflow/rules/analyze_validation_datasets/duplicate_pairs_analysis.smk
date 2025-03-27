@@ -4,12 +4,14 @@
 rule create_gasperini_sceptre_inputs:
   input:
     perturb_sce = "resources/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/perturb_sce.rds",
-    crispr_pipeline_output = "resources/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/output_0.13gStd_MAST_perCRE.tsv.gz"
+    crispr_pipeline_output = "resources/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/output_0.13gStd_MAST_perCRE.tsv.gz",
+    annot = "resources/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/gencode.v26lift37.annotation.gtf.gz"
   output:
     raw_counts = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/raw_counts.rds",
     binarized_guide_counts = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/binarized_guide_counts.rds",
     response_id_target_pairs = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/response_id_target_pairs.tsv",
-    guide_target_pairs = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/guide_target_pairs.tsv"
+    guide_target_pairs = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/guide_target_pairs.tsv",
+    distances = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/distances.tsv" 
   log: "results/analyze_validation_datasets/duplicate_pairs_analysis/logs/create_gasperini_sceptre_inputs.log"
   conda:
     "../../envs/analyze_crispr_screen.yml"
@@ -76,7 +78,8 @@ rule compare_gasperini_Sceptre_and_MAST:
     combined_training = "results/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/combined_training_expt_pred_merged_annot.txt",
     annotation_file = "resources/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/gencode.v26lift37.annotation.gtf.gz" 
   output:
-    gasperini_MAST_and_Sceptre = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_analysis/gasperini_MAST_and_Sceptre.rds"
+    gasperini_MAST_and_Sceptre = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_analysis/gasperini_MAST_and_Sceptre.rds",
+    gasperini_sceptre_results_w_symbol = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_analysis/gasperini_sceptre_results_w_symbol.rds"
   log: "results/analyze_validation_datasets/duplicate_pairs_analysis/logs/compare_gasperini_Sceptre_and_MAST.log"
   conda:
     "../../envs/analyze_crispr_screen.yml"
@@ -90,14 +93,21 @@ rule compare_gasperini_Sceptre_and_MAST:
 rule find_duplicate_pairs:
   input:
     gasperini_MAST_and_Sceptre = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_analysis/gasperini_MAST_and_Sceptre.rds",
-    combined_validation = "results/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/combined_validation_expt_pred_merged_annot.txt"
+    combined_validation = "results/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/combined_validation_expt_pred_merged_annot.txt",
+    gasperini_sceptre_results_w_symbol = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_analysis/gasperini_sceptre_results_w_symbol.rds",
+    perturb_sce = "resources/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/perturb_sce.rds",
+    dc_tap_guide_targets = "results/process_validation_datasets/K562_DC_TAP_Seq/guide_targets.tsv",
+    singleton_dctap = "/oak/stanford/groups/engreitz/Users/jgalante/DC_TAP_Paper/results/process_validation_datasets/K562_DC_TAP_Seq/singleton_differential_expression/results_run_discovery_analysis.rds",
+    singleton_gasperini = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_analysis/per_guide_diffex/results_run_discovery_analysis.rds"
   output:
     gasperini_sceptre_v_mast_comparison = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_v_mast_comparison.pdf",
     comparing_all_duplicate_pairs = "results/analyze_validation_datasets/duplicate_pairs_analysis/comparing_all_duplicate_pairs.pdf",
     comparing_valid_duplicate_pairs = "results/analyze_validation_datasets/duplicate_pairs_analysis/comparing_valid_duplicate_pairs.pdf",
-    comparing_all_duplicate_pairs_with_color = "results/analyze_validation_datasets/duplicate_pairs_analysis/comparing_all_duplicate_pairs_with_color.pdf"
+    comparing_all_duplicate_pairs_with_color = "results/analyze_validation_datasets/duplicate_pairs_analysis/comparing_all_duplicate_pairs_with_color.pdf",
+    gasperini_guides_bed_file = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_guides_bed_file_hg19.bed"
+  log: "results/analyze_validation_datasets/duplicate_pairs_analysis/logs/find_duplicate_pairs.log"
   conda: 
-    "../../envs/analyze_crispr_screen.yml"
+    "../../envs/find_duplicate_pairs.yml"
   resources:
     mem = "48G",
     time = "2:00:00"

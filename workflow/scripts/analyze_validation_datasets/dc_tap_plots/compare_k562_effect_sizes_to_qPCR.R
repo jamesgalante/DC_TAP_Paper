@@ -5,7 +5,7 @@
 # Saving image for debugging
 save.image(paste0("RDA_objects/compare_k562_effect_sizes_to_qPCR.rda"))
 message("Saved Image")
-stop("Manually Stopped Program after Saving Image")
+# stop("Manually Stopped Program after Saving Image")
 
 # Open log file to collect messages, warnings, and errors
 log_filename <- snakemake@log[[1]]
@@ -21,7 +21,7 @@ suppressPackageStartupMessages({
   library(tidyverse)
   library(Seurat)
   library(sceptre)
-  library(openxlsx)
+  library(ggrepel)
 })
 
 message("Loading input files")
@@ -31,7 +31,7 @@ gene_matrix <- cell_ranger_outputs[[1]]
 guide_matrix <- cell_ranger_outputs[[2]]
 
 # qPCR results
-qPCR_results <- read.xlsx(snakemake@input$qPCR_results)
+qPCR_results <- read_tsv(snakemake@input$qPCR_results)
 extra_qPCRs <- read_tsv(snakemake@input$extra_qPCRs)
 
 # Full singleton DC TAP results for extra guide comparison
@@ -44,8 +44,12 @@ k562_singleton_diffex_results <- readRDS(snakemake@input$k562_singleton_diffex_r
 guide_names <- rownames(guide_matrix)
 grna_target_data_frame <- data.frame(
   grna_id = guide_names,
-  grna_target = ifelse(1:length(guide_names) <= 94, "non-targeting", guide_names)
+  grna_target = ifelse(1:length(guide_names) <= 98, "non-targeting", guide_names)
 )
+
+# These guides are not present in the fastq files
+guide_names_not_in_screen <- c("safe_1", "safe_2", "safe_6", "safe_17", "safe_19", "safe_22", "safe_26", "safe_41", "nontarget_4", "nontarget_32", "nontarget_33", "nontarget_34")
+grna_target_data_frame <- grna_target_data_frame %>% filter(!grna_id %in% guide_names_not_in_screen)
 
 # Creating the discovery_pairs dataframe - all by all - (grna_target, response_id)
 testing_target_names <- grna_target_data_frame %>% filter(grna_target != "non-targeting") %>% pull(grna_id)
@@ -98,15 +102,13 @@ discovery_results <- get_result(
 # Here we're comparing the results of the guides from a pilot screen with qPCR results
 # Let's look at all guides that we tested that are in discovery pairs
 filt_qPCR_results <- qPCR_results %>% 
-  filter(guides %in% testing_target_names) %>%
-  filter(grepl("NC", guides) | sapply(seq_along(guides), function(i) grepl(genes[i], guides[i]))) %>% # Only keep `genes` - `guides` pairs where the `guides` contains "NC" or the `guides` contains the `genes` gene name
-  mutate(type = case_when(
-    grepl("TSS", guides) ~ "TSS",
-    grepl("NC", guides) ~ "NC",
-    grepl("e-", guides) | grepl("-e", guides) ~ "Enh"
-  )) %>%
-  left_join(discovery_results, by = c("genes" = "response_id", "guides" = "grna_target")) %>%
-  mutate(pctChange = 2^log_2_fold_change - 1)
+  mutate(type = "TSS") %>%
+  mutate(qPCR_EffectSize = expr_remaining - 1) %>%
+  left_join(discovery_results, by = c("gene" = "response_id", "guide" = "grna_target")) %>%
+  mutate(pctChange = 2^log_2_fold_change - 1) %>%
+  mutate(Source = "Original") %>%
+  select(-expr_remaining) %>%
+  mutate(plotting_name = guide)
 
 
 ### FORMAT EXTRA RESULTS ======================================================
@@ -126,43 +128,122 @@ response_id_to_symbol_conversion <- c(
 joined_extra_qPCRs <- extra_qPCRs %>%
   left_join(k562_singleton_diffex_results %>% group_by(grna_id) %>% dplyr::slice(1), by = c("Name" = "grna_id")) %>% # I checked each response_id, and they are the expected gene_symbol
   mutate(pctChange = 2^log_2_fold_change - 1) %>%
-  dplyr::rename(guides = "Name", means = "qPCR", sds = `Stdev qPCR` ) %>%
-  mutate(ics = NA, p_values = NA, n_nc_cells = NA) %>%
+  dplyr::rename(guide = "Name", sem = `SE_qPCR`) %>%
   mutate(type = case_when(
     grepl("tss", `Gene-Target`) ~ "TSS",
-    grepl("enh", `Gene-Target`) ~ "enh"
+    grepl("enh", `Gene-Target`) ~ "Enh"
   )) %>%
-  mutate(genes = response_id_to_symbol_conversion[response_id]) %>%
+  mutate(gene = response_id_to_symbol_conversion[response_id]) %>%
+  mutate(Source = "Extra") %>%
+  mutate(qPCR_EffectSize = -qPCR) %>%
+  mutate(plotting_name = gene) %>%
+  select(-c("response_id", "grna_target")) %>%
   select(colnames(filt_qPCR_results))
 
 
-### PLOT RESULTS ==============================================================
+### INITIAL PLOTTING RESULTS ==================================================
 
 # Merge the two datasets together
 merged_data <- rbind(
   filt_qPCR_results,
   joined_extra_qPCRs
-) %>%
-mutate(means = -(1 - means)) # Convert the "means" to "pctChange"
+) 
 
-# Plot the correlation between "means" and "pctChange"
-merged_data %>%
-  ggplot(aes(x = means*100, y = pctChange*100, color = type)) +
-  geom_point() +
+comparison_of_all_by_type <- merged_data %>%
+  ggplot(aes(x = qPCR_EffectSize*100, y = pctChange*100, label = plotting_name, color = type)) +
+  geom_point(size = 3) +
+  geom_text_repel(size = 3.8, color = "black") +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_vline(xintercept = 0, linetype = "dotted") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
   labs(
-    title = "qPCR v. Sceptre Effect Sizes",
-    y = "Sceptre Effect Size (%)",
-    x = "qPCR Effect Size (%)"
+    x = "qPCR Effect Size (%)",
+    y = "SCEPTRE Effect Size (%)",
+    color = "Target Type"
   ) +
-  theme_classic() +
-  theme(
-    aspect.ratio = 1
-  )
+  theme_minimal(base_size = 15) + 
+  theme(panel.grid = element_blank(),
+        axis.line = element_line(color = "black"),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        aspect.ratio = 1) +
+  coord_cartesian(xlim = c(-100, 0), ylim = c(-100, 0))
+
+# Save the plot
+ggsave(plot = comparison_of_all_by_type,
+       filename = snakemake@output$comparison_of_all_by_type,
+       device = "pdf", height = 6, width = 6)
+
+
+### FIGURES FOR PAPER =========================================================
+
+# Subsetting the data for two plots
+positive_controls <- merged_data %>%
+  filter(gene %in% c("HDAC6", "GATA1", "PLP2", "FAM83A"))
+other_tests <- merged_data %>%
+  filter(!gene %in% positive_controls$gene)
+
+# Plotting the positive controls
+positive_controls[positive_controls$gene == "PLP2", "plotting_name"] <- "PLP2-TSS"
+positive_controls[positive_controls$gene == "FAM83A", "plotting_name"] <- "FMA83A-TSS"
+
+# Plot the positive controls comparison
+comparison_positive_controls <- positive_controls %>%
+  ggplot(aes(x = qPCR_EffectSize*100, y = pctChange*100, label = plotting_name)) +
+  geom_point(size = 3, color = "red") +
+  geom_text_repel(size = 4.5, color = "black") +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_vline(xintercept = 0, linetype = "dotted") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+  labs(
+    x = "qPCR Effect Size (%)",
+    y = "SCEPTRE Effect Size (%)"
+  ) +
+  theme_minimal(base_size = 15) + 
+  theme(panel.grid = element_blank(),
+        axis.line = element_line(color = "black"),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        aspect.ratio = 1) +
+  coord_cartesian(xlim = c(-100, 0), ylim = c(-100, 0))
+
+# Save the plot
+ggsave(plot = comparison_positive_controls,
+       filename = snakemake@output$comparison_positive_controls,
+       device = "pdf", height = 5, width = 5)
+
+# Plot the other comparisons
+comparison_others <- other_tests %>%
+  ggplot(aes(x = qPCR_EffectSize*100, y = pctChange*100, label = plotting_name, color = type)) +
+  geom_point(size = 3) +
+  geom_text_repel(size = 4.5, color = "black") +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_vline(xintercept = 0, linetype = "dotted") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+  labs(
+    x = "qPCR Effect Size (%)",
+    y = "SCEPTRE Effect Size (%)",
+    color = "Target Type"
+  ) +
+  theme_minimal(base_size = 15) + 
+  theme(panel.grid = element_blank(),
+        axis.line = element_line(color = "black"),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        aspect.ratio = 1) +
+  coord_cartesian(xlim = c(-100, 0), ylim = c(-100, 0))
+
+# Save the plot
+ggsave(plot = comparison_others,
+       filename = snakemake@output$comparison_others,
+       device = "pdf", height = 6, width = 6)
+
 
 ### SAVE OUTPUT ===============================================================
 
 # Save output files
 message("Saving output files")
+write_tsv(merged_data, snakemake@output$formatted_qPCR_Sceptre_table)
 write_outputs_to_directory(sceptre_object = sceptre_object, directory = dirname(snakemake@output$results_run_discovery_analysis))
 
 

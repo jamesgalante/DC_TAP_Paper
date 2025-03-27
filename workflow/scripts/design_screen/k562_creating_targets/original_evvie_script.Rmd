@@ -1,0 +1,1544 @@
+---
+editor_options: 
+  chunk_output_type: console
+---
+title: "Exploration ENCODE CRISPRi screen design"
+author: "Andreas Gschwind"
+date: "10/06/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Goal
+Explore candidate loci for ENCODE enhancer screen.
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(here)
+library(rtracklayer)
+library(BiocParallel)
+library(cowplot)
+```
+
+### Candidate genes
+Transcript-per-million (TPM) data computed from the Gasperini et al., 2019 data is used to select
+potential loci with genes above 50 TPM.
+
+```{r tmpData, fig.height=4, fig.width=5}
+# load TPM data
+#tpm <- read_csv(here("results", "gasperini", "tpm.csv"),
+                #col_types = cols(.default = col_character(),tpm = col_double()))
+
+##ej 
+
+tpm = read_csv("/Users/ejagoda/Documents/HGRM/EP_benchmarking/Encode_Crispri_Screen/tpm.csv",col_types = cols(.default = col_character(),tpm = col_double()))
+
+# number and percentage of genes above 50 TPM
+n_above_50 <- sum(tpm$tpm >= 50)
+
+# plot TPM distribution
+ggplot(tpm, aes(tpm)) +
+  geom_histogram(bins = 50) +
+  geom_vline(xintercept = 50, color = "red") +
+  labs(x = "Transcripts-per-million (TPM)", title = paste0("Genes above 50 TPM: ", n_above_50)) +
+  scale_x_log10() +
+  theme_bw() 
+```
+
+### Genome annotations
+GENCODE v26lift37 genome annotations were used in the original analysis by Gasperini et al., but to
+be consistent with ENCODE it would be best to design the screen in hg38. ENCODE 4 will use GENCODE
+v29 annotations. Let's see how many genes can be uniquely identified in genome annotations.
+
+```{r genomeAnnot}
+# URLs to GENCODE annotations
+v26lift37_url <- "http://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/gencode.v26.annotation.gtf.gz"
+v26_url <- "http://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/GRCh37_mapping/gencode.v26lift37.annotation.gtf.gz"
+v29_url <- "http://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_29/gencode.v29.annotation.gtf.gz"
+
+# import annotations
+v26lift37 <- import(v26lift37_url, format = "gtf")
+v26 <- import(v26_url, format = "gtf")
+v29 <- import(v29_url, format = "gtf")
+
+
+
+#EJ
+
+#v26 = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/just_genes_gencode.v26lift37.annotation.gtf",header =F)
+
+
+
+v26 = rtracklayer::import("/Users/ejagoda/Documents/HGRM/EP_benchmarking/Encode_Crispri_Screen/gencode.v26lift37.annotation.gtf.gz")
+
+v29 = rtracklayer::import("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/wct11/gencode.v29.annotation.gtf.gz")
+
+# get Ensembl gene ids without version
+#v26lift37$gene_base_id <- sub("\\..*", "", v26lift37$gene_id)
+v26$gene_base_id <- sub("\\..*", "", v26$gene_id)
+#v29$gene_base_id <- sub("\\..*", "", v29$gene_id)
+
+# get number of genes in TPM data missing from annotations
+#in_v26lift37 <- table(tpm$gene %in% v26lift37$gene_base_id)
+in_v26 <- table(tpm$gene %in% v26$gene_base_id)
+#in_v29 <- table(tpm$gene %in% v29$gene_base_id)
+
+# combine into one table
+#in_annot <- list(v26lift37 = in_v26lift37, v26 = in_v26, v29 = in_v29) %>% 
+#  bind_rows(.id = "genome_annotation") %>% 
+#  dplyr::rename(missing = `FALSE`, found = `TRUE`)
+
+# print table
+#knitr::kable(in_annot)
+```
+
+All annotations seem to miss some of the genes where expression data is present. Surprisingly v26
+(hg38) seems to contain most of the genes, which is weird as the paper states that v26lift37 was
+used for their analyses. Let's use hg38 v26 for now until we figure out what's going on. #EJ - i think you flipped them, in this version
+
+### Candidate enhancers
+K562 DNase-seq peaks from ENCODE (Experiment: ENCSR000EKS, File: ENCFF274YGF (hg38)) are used as
+candidate enhancers.
+
+```{r dhsData, fig.height=4, fig.width=5}
+# column names in a narrowPeaks bed fil
+peak_colnames <- c("chrom", "chromStart", "chromEnd", "name", "score", "strand", "signalValue",
+                   "pValue", "qValue", "peak", "reads")
+
+# column types in a narrowPeaks bed file with added read counts
+peak_cols <- cols(
+  chrom = col_character(),
+  chromStart = col_double(),
+  chromEnd = col_double(),
+  name = col_character(),
+  score = col_double(),
+  strand = col_character(),
+  signalValue = col_double(),
+  pValue = col_double(),
+  qValue = col_double(),
+  peak = col_double(),
+  reads = col_double()
+)
+
+# import ENCODE DNase-seq peaks
+#dhs_file <- here("resources/DNase/DNase_counts/ENCFF274YGF_ENCFF257HEE_read_counts.bed.gz")
+
+##Evvie addition, redo when get access to sherlock## 
+#dhs_file = "/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/ENCFF274YGF_ENCFF257HEE_read_counts.bed.gz"
+
+dhs_file = "/Users/ejagoda/Documents/HGRM/EP_benchmarking/Encode_Crispri_Screen/final_round_design/ENCFF185XRG_w_ENCFF325RTP_q30_sorted.txt"
+#raw_dhs_file = read.table("ENCFF274YGF.bed")
+
+
+#####
+
+dhs <- read_tsv(dhs_file, col_names = peak_colnames, col_types = peak_cols)
+
+# normalize reads for peak width by calculating RPKM
+dhs <- dhs %>% 
+  mutate(peak_width = chromEnd - chromStart,
+         reads_rpkm = reads / (sum(reads) / 1e6) / (peak_width / 1000))
+
+dhs$id = paste0(dhs$chrom,":",dhs$chromStart,"_",dhs$chromEnd)
+
+
+
+
+
+
+
+
+q_thresholds = seq(from = 0.0, to = 1, by = 0.25)
+quants = c()
+for (q in q_thresholds){
+    quant = quantile(as.numeric(paste0(dhs$reads)),q)
+    quants = c(quants, quant)
+}
+
+dhs$quant = "x"
+for (i in 1:nrow(dhs)){
+  read = as.numeric(paste0(dhs[i,"reads"]))
+  if (read < quants[2]){
+    dhs[i,"quant"] = "0_25"
+  }
+  else if (read >= quants[2] & read < quants[3]){
+    dhs[i,"quant"] = "25_50"
+  }
+  else if (read >= quants[3] & read < quants[4]){
+    dhs[i,"quant"] = "50_75"
+  }
+    else if (read >= quants[4] & read < quants[5]){
+    dhs[i,"quant"] = "75_1"
+  }
+}
+
+###add for each dhs the quantile and the tss and then you can just report that in the locus stats - quant should be easish
+##then can sample 100 samples of 25 and see which ones you could do the thresholds for
+
+
+# plot DNase reads distribution
+ggplot(dhs, aes(x = reads)) +
+  geom_histogram(bins = 50, fill = hsv(h = 0.1, s = 0.8, alpha = 1)) +
+  labs(title = paste(nrow(dhs), "K562 DHS"), x = "DNase-seq reads in DHS") +
+  theme_bw()
+
+
+##EJ plot DHS 
+
+ggplot(dhs, aes(x = reads)) + 
+  stat_ecdf(geom = "step") +
+  labs(title =  "K562 DHS", x =  "DNase-seq reads in DHS", y = "cumulative fraction")
+
+
+
+
+#not to self, export this, find inflection point, show median/mean
+
+
+ggplot(dhs, aes(x = reads_rpkm)) + 
+  stat_ecdf(geom = "step") +
+  labs(title =  "rpkm normalized K562 DHS", x =  "rpkm normalized DNase-seq reads in DHS", y = "cumulative fraction")
+#not to self, export this, find inflection point, show median/mean
+
+
+
+
+# create GRanges object
+dhs_gr <- makeGRangesFromDataFrame(dhs, keep.extra.columns = TRUE)
+```
+
+### Candidate loci
+For every protein-coding gene above 50TPM the number of other genes, other genes above 50 TPM and
+DHS within 1Mb are counted.
+
+###EJ - need to add the gene names and the dhs_locations 
+
+```{r locusStatsFunction}
+# function to count all genes and peaks within a certain distance of a target gene
+compute_locus_stats <- function(gene, genes_annot, peaks, tpm_data, tpm_threshold = 50,
+                                locus_width = 2e6) {
+  
+  # create locus window, centered on TSS of gene
+  locus <- resize(gene, width = locus_width, fix = "start")
+  locusstart = as.numeric(paste0(start(locus)))
+  locusend = as.numeric(paste0(end(locus)))
+  # get all genes and peaks within that locus window
+  locus_genes <- subsetByOverlaps(genes_annot, locus, ignore.strand = TRUE)
+  locus_dhs <- subsetByOverlaps(peaks, locus, ignore.strand = TRUE)
+  
+  #locus_nearest_gene_to_peak <- locus_genes[precede(locus_dhs,locus_genes, ignore.strand=FALSE)]
+  #locus_distance_nearest_gene_to_peak <- distanceToNearest(locus_dhs,locus_genes, ignore.strand=FALSE)
+ 
+  #locus_distance_nearest_gene_to_peak <- mcols(distanceToNearest(ranges(dhs_gr),genes$tss))[,1]
+  x  = distanceToNearest(ranges(locus_dhs),locus_genes$tss)
+  locus_distance_nearest_tss_to_peak <- mcols(x)[,1]
+  locus_nearest_tss = locus_genes$gene_base_id[subjectHits(x)]
+  
+  # get genes with tpm data
+  locus_gene_start <- start(locus_genes)
+  locus_gene_ids <- locus_genes$gene_name 
+  locus_genes <- locus_genes$gene_base_id
+  genes_with_tpm_data <- intersect(locus_genes, tpm$gene)
+  genes_without_tmp_data <- setdiff(locus_genes, tpm$gene)
+  
+  # get tpm values for genes if available
+  locus_tpm <- filter(tpm_data, gene %in% genes_with_tpm_data)
+  tpm_values <- pull(locus_tpm, tpm)
+  
+  # get genes above tpm threshold
+  genes_above_tpm <- locus_tpm %>% 
+    filter(tpm >= tpm_threshold) %>% 
+    pull(gene)
+  
+  # create output data frame
+  '
+  output <- tibble(
+    locus = gene$gene_base_id,
+    dhs = length(locus_dhs),
+    dhs_reads = list(locus_dhs$reads),
+    genes = length(locus_genes),
+    genes_above_tpm = length(genes_above_tpm),
+    genes_with_tpm_data = length(genes_with_tpm_data),
+    tpm_values = list(tpm_values),
+    genes_without_tmp_data = length(genes_without_tmp_data)
+    )
+  '
+  #EJ additions
+  
+    output <- tibble(
+    locus = gene$gene_base_id,
+    locus_start = locusstart,
+    locus_end = locusend,
+    dhs = length(locus_dhs),
+    locus_dhs_ids = list(locus_dhs$id),
+    dhs_reads = list(locus_dhs$reads),
+    dhs_quants = list(locus_dhs$quant),
+    #dhs_nearest_gene = list(locus_nearest_gene_to_peak),
+    dhs_nearest_tss = list(locus_nearest_tss),
+    dhs_nearest_tss_distance = list(locus_distance_nearest_tss_to_peak),
+    genes = length(locus_genes),
+    gene_ids = list(locus_genes),
+    gene_names = list(locus_gene_ids),
+    gene_start = list(locus_gene_start),
+    genes_above_tpms = length(genes_above_tpm),
+    #genes_above_tpm = length(genes_above_tpm),
+    genes_above_tpm_ids = list(genes_above_tpm),
+    genes_with_tpm_data = length(genes_with_tpm_data),
+    tpm_values = list(tpm_values),
+    genes_without_tmp_data = length(genes_without_tmp_data)
+    )
+  
+    output <- tibble(
+    locus = gene$gene_base_id,
+    locus_start = locusstart,
+    locus_end = locusend,
+    dhs = length(locus_dhs),
+    locus_dhs_ids = list(locus_dhs$id),
+    dhs_reads = list(locus_dhs$reads),
+    dhs_quants = list(locus_dhs$quant),
+    # dhs_nearest_gene = list(locus_nearest_gene_to_peak),
+    dhs_nearest_tss = list(locus_nearest_tss),
+    dhs_nearest_tss_distance = list(locus_distance_nearest_tss_to_peak),
+    genes = length(locus_genes),
+    gene_ids = list(locus_genes),
+    gene_names = list(locus_gene_ids),
+    gene_start = list(locus_gene_start),
+    genes_above_tpms = length(genes_above_tpm),
+    genes_above_tpm = length(genes_above_tpm),
+    genes_above_tpm_ids = list(genes_above_tpm),
+    genes_with_tpm_data = length(genes_with_tpm_data),
+    tpm_values = list(tpm_values),
+    genes_without_tmp_data = length(genes_without_tmp_data)
+    )
+  
+  return(output)
+  
+}
+```
+
+```{r computeLocusStats}
+# get all genes above 50 TPM
+tpm_genes <- filter(tpm, tpm >= 50)
+
+# only retain protein-coding gene locus annotations on autosomes and chromosome X
+genes <- v26[v26$type == "gene" &
+               seqnames(v26) %in% paste0("chr", c(1:22, "X")) &
+               v26$gene_type == "protein_coding"]
+
+#add the strand oriented start position as tss
+genes$tss= IRanges(start(resize(genes,1)),start(resize(genes,1)) + 1) 
+
+
+#EJ
+'''
+genes <- v26[v26$V3 == "gene" &
+               v26$V1 %in% paste0("chr", c(1:22, "X")) &
+               v26$V13 == "protein_coding",]
+
+genes$gene_base_id = "x"
+
+for (i in 1:nrow(genes)){
+  gene_name = genes[i,"V10"]
+  gene_name_split = str_split(gene_name,"[.]")[[1]][1]
+  genes[i,"gene_base_id"] = gene_name_split
+}
+'''
+
+# extract annotations for tpm filtered genes
+#EJ
+
+tpm_genes_annot <- genes[genes$gene_base_id %in% tpm_genes$gene]
+tpm_genes <- filter(tpm_genes, gene %in% tpm_genes_annot$gene_base_id)
+
+# split tpm filtered gene annotations into GRangesList, one gene per element
+tpm_genes_annot <- split(tpm_genes_annot, f = tpm_genes_annot$gene_base_id)
+
+# register backend for parallel computing
+register(MulticoreParam(workers = 5))
+
+# compute locus statistics for each potential target gene
+locus_stats <- bplapply(tpm_genes_annot, FUN = compute_locus_stats, genes_annot = genes,
+                        peaks = dhs_gr, tpm_data = tpm, tpm_threshold = 50, locus_width = 2e6)
+
+# combine into one data frame
+locus_stats <- bind_rows(locus_stats) 
+x = data.frame(locus_stats) #got dhs working work on gene ids, see if you can add quant data to the computation and distance threshold
+```
+
+Each of the loci will have a number of genes without TPM data. With the correct annotations, these
+should be non-expressed genes or genes that did not pass a filter to end up on the scRNA-seq data. 
+
+```{r plotLocusStats, fig.height=3.5, fig.width=9}
+# colors for locus stats
+colors <- c("DHS" = hsv(h = 0.1, s = 0.8, alpha = 1),
+            "Genes" = hsv(h = 0.62, s = 0.3, alpha = 1), 
+            "Genes above 50 TPM" = hsv(h = 0.62, s = 0.8, alpha = 1))
+
+# plot locus stats for all candidate loci
+locus_stats %>% 
+  dplyr::select(locus, DHS = dhs, Genes = genes, `Genes above 50 TPM` = genes_above_tpm) %>% 
+  pivot_longer(cols = -locus, names_to = "stat", values_to = "value") %>% 
+  ggplot(., aes(x = value, fill = stat)) +
+    facet_wrap(~stat, scale = "free") +
+    geom_histogram(bins = 20) +
+    labs(title = paste0("Locus stats all candidate loci (", nrow(locus_stats), ")"),
+         x = "Number of DHS/Genes/Genes above 50 TPM",
+         y = "Number of loci") +
+    scale_fill_manual(values = colors) +
+    theme_bw()
+```
+
+
+```{r, fig.height=4, fig.width=5}
+# extract DNase-seq reads in DHS
+dnase_reads <- locus_stats %>% 
+  dplyr::select(locus, dhs_reads) %>% 
+  unnest(cols = dhs_reads)
+
+# plot DNase-seq reads distribution across all DHS within loci
+ggplot(dnase_reads, aes(x = dhs_reads)) +
+  geom_histogram(bins = 50, fill = hsv(h = 0.1, s = 0.8, alpha = 1)) +
+  labs(title = paste(nrow(dnase_reads), "K562 DHS within", nrow(locus_stats), "loci"),
+       x = "DNase-seq reads in DHS") +
+  theme_bw()
+```
+
+
+### Randomly select sets of loci
+To perform a CRISPRi screen we will randomly select 25 loci from all the candidate loci around genes
+above 50 TPM. This is done repeatedly to check how variable the above locus stats are, i.e. how
+representative 25 loci will be.
+
+##EJ - do random samples of 100 loci - and then get the yes/no on if they could do the % tss and the % dhs [maybe] -
+
+###so here's where you get the different sets and could add in the various additional filters from the sets
+
+```{r sampledLocusStats, fig.height=15, fig.width=7}
+#Add dhs and tss distance information then do just random samples of 40 for each locus
+#compare the end result
+
+locus_stats_df = data.frame(locus_stats)
+locus_stats_df$q75counts = "x"
+locus_stats_df$bottom75 = "x"
+locus_stats_df$q75counts_p = "x"
+locus_stats_df$bottom75_p = "x"
+for (i in 1:nrow(locus_stats_df)){
+  quant_list = locus_stats_df[i,"dhs_quants"][[1]]
+  if (is.na( as.numeric(table(quant_list)["75_1"]))){
+     locus_stats_df[i,"q75counts"] = 0
+  }
+  else{
+     locus_stats_df[i,"q75counts"] = as.numeric(table(quant_list)["75_1"])
+     locus_stats_df[i,"q75counts_p"] = as.numeric(table(quant_list)["75_1"])/length(quant_list)
+     
+  }
+  locus_stats_df[i,"bottom75"] = sum(table(quant_list)) - as.numeric(table(quant_list)["75_1"])
+  locus_stats_df[i,"bottom75_p"] = as.numeric(paste0(locus_stats_df[i,"bottom75"]))/length(quant_list)
+}
+
+locus_stats_df$g100kb = "x"
+locus_stats_df$l100kb = "x"
+locus_stats_df$g100kb_p = "x"
+locus_stats_df$l100kb_p = "x"
+for (i in 1:nrow(locus_stats_df)){
+  distances = locus_stats_df$dhs_nearest_tss_distance[[i]]
+  if (length(distances) == 0){
+    locus_stats_df[i,"g100kb"] = 0
+    locus_stats_df[i,"l100kb"] = 0
+  }
+  else{
+    g100kb_count = length(which(distances > 100000))
+    l100kb_count = length(which(distances <= 100000 & distances > 1000)) #want at least 1kb from promoter
+    locus_stats_df[i,"g100kb"] = g100kb_count
+    locus_stats_df[i,"l100kb"] = l100kb_count
+  }
+  locus_stats_df[i,"g100kb_p"] = as.numeric(paste0(locus_stats_df[i,"g100kb"]))/length(distances)
+  locus_stats_df[i,"l100kb_p"] = as.numeric(paste0(locus_stats_df[i,"l100kb"]))/length(distances)
+} 
+
+
+#get the tpm genes for rep 6
+rep_6_loci = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/loci_only_bed_version_rep6.bed",header = F,sep = '\t')
+colnames(rep_6_loci) = c("chr","start","end","seqnames")
+
+locus_stats_rep6 = locus_stats_df[locus_stats_df$locus %in% rep_6_loci$seqnames,]
+#write.table(locus_stats_rep6,"/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/locus_stats_full_rep6.txt",quote = F,sep = '\t',row.names = F)
+
+locus_stats_rep6_small = locus_stats_rep6[,c("locus","genes_above_tpms","genes_above_tpm_ids")]
+sum(locus_stats_rep6_small$genes_above_tpms) #156
+locus_stats_rep6_small$genes_above_tpms_list = paste(locus_stats_rep6_small$genes_above_tpm_ids,sep = ";")
+
+locus_stats_rep6_small$genes_above_tpm_ids = NULL
+write.table(locus_stats_rep6_small,"/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/rep_6_locus_info_genes_>50tpm.txt", quote = F,sep = '\t' ,row.names = F)
+
+rep_tab_small = rep_tab[,c("seqnames","chr","start","end","genes_above_tpms"  ,"genes_above_tpm_ids")]
+  write.table(rep_tab_small,paste0("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/wct11/Potential_Loci/Fixed_TPM/locus_info_w_genes_>50tpm",rep,".txt"),sep = '\t',row.names = F, col.names = T,quote = F)
+
+
+# repeatedly sample 25 loci move this down, add the quantile stuff
+set.seed(211005)
+#sample_reps <- replicate(sample_n(locus_stats, size = 25), n = 25, simplify = FALSE)
+#try sampling 100 loci - need 40 total where you could get 50% DHS top quant and max 25% more than 1kb away
+
+sample_reps <- replicate(sample_n(locus_stats, size = 25), n = 100, simplify = FALSE)
+sample_reps <- sample_reps %>% 
+  bind_rows(.id = "rep") %>% 
+  mutate(rep = fct_inorder(rep))
+
+sample
+
+sample_reps$chr = "x"
+for (i in 1:nrow(sample_reps)){
+  chr = str_split( sample_reps[i,"locus_dhs_ids"][[1]][1][[1]][1],":")[[1]][1]
+  sample_reps[i,"chr"]  = chr
+}
+
+
+sample_reps_gr <- makeGRangesFromDataFrame(sample_reps, keep.extra.columns = TRUE,start.field = "locus_start",end.field = "locus_end",seqnames.field = "locus")
+
+rep_overlaps = c()
+for (rep in unique(sample_reps_gr$rep)){
+  rep_loci = sample_reps_gr[sample_reps_gr$rep == rep,]
+  cat(paste0("\nrep",rep))
+  overlaps = 0
+  for (i in 1:(length(rep_loci))){
+    for (j in 1:(length(rep_loci))){
+      if (i != j & i < j){
+        #cat(paste0(" locus",i,"vs",j))
+        intersect = GenomicRanges::intersect(x = rep_loci[i,],y = rep_loci[j,])
+        if (length(intersect) > 0){
+          overlaps = overlaps + 1
+          cat(paste0("overlap locus",i,"vs",j))
+          }
+       }
+    }
+  }
+  rep_overlaps = c(rep_overlaps,overlaps)
+}
+
+
+#x = sample_reps_gr[sample_reps_gr$rep == 1,]
+#ranges(x[x$chr == "chr4",])
+#1-64 no overlaps
+
+#GenomicRanges::intersect(x = sample_reps_gr[1,],y = sample_reps_gr[2,])
+
+sample_reps_gr$locus_dhs_sample = NULL
+sample_reps_gr$sample_dhs_length = NULL
+sample_reps_gr$quant_sample = NULL
+sample_reps_gr$q75_count = NULL
+sample_reps_gr$g100kb_count = NULL
+for (i in 1:length(sample_reps_gr)){
+  peak_list = sample_reps_gr$locus_dhs_ids[[i]]
+  distances = sample_reps_gr$dhs_nearest_tss_distance[[i]]
+  quant_list = sample_reps_gr$dhs_quants[[i]]
+  if (length(peak_list) >= 40){
+    peak_sample_index = sample(1:length(peak_list),size = 40)
+  }
+  else{
+    peak_sample_index = 1:length(peak_list)
+  }
+  peak_sample = peak_list[peak_sample_index]
+  distance_sample = distances[peak_sample_index]
+  quant_sample = quant_list[peak_sample_index]
+  sample_reps_gr$locus_dhs_sample[[i]] = peak_sample
+  sample_reps_gr$sample_dhs_length[[i]] = length(peak_sample)
+  sample_reps_gr$distance_sample[[i]] = distance_sample
+  sample_reps_gr$quant_sample[[i]] = quant_sample
+  sample_reps_gr$q75_count[[i]] = sum(quant_sample=="75_1")
+  sample_reps_gr$g100kb_count[[i]] = length(distance_sample[which( distance_sample > 100000)])
+}
+
+#rep summary
+locus_stats_df$q75counts = "x"
+locus_stats_df$bottom75 = "x"
+locus_stats_df$q75counts_p = "x"
+locus_stats_df$bottom75_p = "x"
+
+dhs_counts = c()
+q75counts = c()
+q75counts_p = c()
+g100kb_counts = c()
+g100kbcounts_p = c()
+for (i in 1:length(unique(sample_reps_gr$rep))){
+  rep = unique(sample_reps_gr$rep)[i]
+  rep_tab = data.frame(sample_reps_gr[sample_reps_gr$rep == rep,])
+  dhs_count = sum(as.numeric(paste0(rep_tab$sample_dhs_length)))
+  q75_count = sum(as.numeric(paste0(rep_tab$q75_count)))
+  q75_p = q75_count/dhs_count
+  g100kb_count = sum(as.numeric(paste0(rep_tab$g100kb)))
+  g100kb_p = g100kb_count/dhs_count
+  dhs_counts = c(dhs_counts,dhs_count)
+  q75counts = c(q75counts,q75_count)
+  q75counts_p = c(q75counts_p,q75_p)
+  g100kb_counts = c(g100kb_counts, g100kb_count)
+  g100kbcounts_p = c(g100kbcounts_p,g100kb_p)
+}
+
+rep_summary_tab = data.frame(cbind(unique(sample_reps_gr$rep),dhs_counts,q75counts,q75counts_p,g100kb_counts,g100kbcounts_p))
+
+write.table(rep_summary_tab,"rep_summary_tab.txt",quote = F,sep = '\t',row.names = F)
+##this should be good
+
+for (rep in unique(sample_reps_gr$rep)){
+  rep_tab = data.frame(sample_reps_gr[sample_reps_gr$rep == rep,])
+  bed_version = rep_tab[,c("chr","start","end","seqnames")]
+  write.table(bed_version ,paste0("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/loci_only_bed_version_rep",rep,".bed"),sep = '\t',row.names = F, col.names = F,quote = F)
+  outfile_name = paste0("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/sampled_peaks_rep",rep,".txt")
+outfile = file(outfile_name)
+outfile_name2 = paste0("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/sampled_peaks_rep_bed_only",rep,".bed")
+outfile2 = file(outfile_name2)
+#write(paste("locus","peak","peak_reads","peak_quant","peak_nearest_tss_distance","locus_genes_id", "locus_gene_names",sep = "\t"),outfile_name)
+rep_tab$gene_ids_print = "x"
+rep_tab$gene_names_print = "x"
+for (i in 1:nrow(rep_tab)){
+  gene_ids = rep_tab[i,"gene_ids"][[1]]
+  rep_tab[i,"gene_ids_print"] = paste0(gene_ids,collapse = ";")
+  gene_names = rep_tab[i,"gene_names"][[1]]
+  rep_tab[i,"gene_names_print"] = paste0(gene_names,collapse = ";")
+  peaks = rep_tab[i,"locus_dhs_sample"][[1]]
+  sampled_quants = rep_tab[i,"quant_sample"][[1]]
+  for (j in 1:length(peaks)){
+    #write(paste(rep_tab[i,"locus"],peaks[j],sampled_quants[j],rep_tab[i,"gene_ids_print"],rep_tab[i,"gene_names_print"],sep = "\t"),outfile_name,append = T)
+   peak_split1= str_split(peaks[j],":")[[1]] 
+   peak_split = str_split(peak_split1[2],"_")[[1]]
+   write(paste(peak_split1[1],peak_split[1],peak_split[2],peaks[j],sep = "\t"),outfile_name2,append =T)
+  }
+}
+}
+
+rep_summary_tab = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/rep_summary_tab.txt",header = T,sep = '\t')
+
+ggplot(rep_summary_tab,aes(y = dhs_counts,x = "reps")) +
+  geom_boxplot()+
+  geom_jitter(width = 0.2)
+
+dim(rep_summary_tab[rep_summary_tab$dhs_counts == 1000,]) #29
+ #rep 8 0.298               0.253
+
+###good enough probs
+write.table(bed_version[bed_version$locus %in% best_loci_sample_1$locus,],paste0("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/final_round_design/Potential_loci/loci_only_bed_version_rep",k,".bed"),sep = '\t',row.names = F, col.names = F,quote = F)
+best_loci_sample_1$gene_ids_print = "x"
+best_loci_sample_1$gene_names_print = "x"
+outfile_name = paste0("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/final_round_design/Potential_loci/sampled_peaks_rep",k,".txt")
+outfile = file(outfile_name)
+write(paste("locus","peak","peak_reads","peak_quant","peak_nearest_tss_distance","locus_genes_id", "locus_gene_names",sep = "\t"),outfile_name)
+for (i in 1:nrow(best_loci_sample_1)){
+  gene_ids = best_loci_sample_1[i,"gene_ids"][[1]]
+  best_loci_sample_1[i,"gene_ids_print"] = paste0(gene_ids,collapse = ";")
+  gene_names = best_loci_sample_1[i,"gene_names"][[1]]
+  best_loci_sample_1[i,"gene_names_print"] = paste0(gene_names,collapse = ";")
+  peaks = str_split(best_loci_sample_1[i,"peak_sample"],pattern = ";")[[1]]
+  sampled_reads = str_split(best_loci_sample_1[i,"sampled_reads"],pattern = ";")[[1]]
+  sampled_quants = str_split(best_loci_sample_1[i,"sampled_quants"],pattern = ";")[[1]]
+  sampled_nearest_tss_distance = str_split(best_loci_sample_1[i,"sampled_nearest_tss_distance"],pattern = ";")[[1]]
+  for (j in 1:length(peaks)){
+    write(paste(best_loci_sample_1[i,"locus"],peaks[j],sampled_reads[j],sampled_quants[j],sampled_nearest_tss_distance[j],best_loci_sample_1[i,"gene_ids_print"],best_loci_sample_1[i,"gene_names_print"],sep = "\t"),outfile_name,append = T)
+    
+  }
+}
+#make 1 file with 1 row per loucs and another file with 1 row per peak with a locus id
+best_loci_sample_1_printv1 = data.frame(cbind(best_loci_sample_1$locus,best_loci_sample_1$dhs,best_loci_sample_1$gene_ids_print, best_loci_sample_1$gene_names_print,best_loci_sample_1$peak_sample, best_loci_sample_1$sampled_reads,best_loci_sample_1$sampled_quants,best_loci_sample_1$sampled_nearest_tss_distance ))
+
+colnames(best_loci_sample_1_printv1) = c("locus_central_gene","total_dhs","locus_gene_ids","locus_gene_names","sampled_peaks","sampled_peak_DHSreads","sampled_peak_quants","sampled_peaks_distance_to_nearest_tss")
+write.table(best_loci_sample_1_printv1,paste0("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/final_round_design/Potential_loci/sampled_loci_rep",k,".txt"),quote=F ,sep = "\t",row.names = F)
+}
+
+
+
+
+
+
+
+
+
+distances = usable_loci$dhs_nearest_tss_distance[[i]]
+  quant_list = usable_loci$dhs_quants[[i]]
+  peak_list = usable_loci$locus_dhs_ids[[i]]
+  g100_kb_peak_indexs = which(distances > 100000)
+  g100_kb_sampled_indexs = sample(g100_kb_peak_indexs,size = 10)
+  g100kb_sampled_peaks = peak_list[g100_kb_sampled_indexs]
+  q75_sampled_already = length(which(quant_list[g100_kb_sampled_indexs] == "75_1"))
+  l100_kb_peak_indexs = which(distances <= 100000 & distances > 100)
+  l100kb_peaks = peak_list[l100_kb_peak_indexs]
+  quants_l100kb_peaks = quant_list[l100_kb_peak_indexs]
+  top75_l100kb = l100kb_peaks[which(quants_l100kb_peaks == "75_1")]
+  bottom75_l100kb = l100kb_peaks[which(quants_l100kb_peaks != "75_1")]
+
+
+#make the bedfile with the intersection across loci so that you can pull those out
+
+dhs_sums = c()
+sample_reps_df = data.frame(sample_reps)
+for (rep in unique(sample_reps_df$rep)){
+ total_dhs = sum((sample_reps_df[sample_reps_df$rep == rep, "dhs"]))
+ dhs_sums = c(dhs_sums,total_dhs)
+}
+
+plot(unique(sample_reps_df$rep),dhs_sums) #okay so too many, so pick 40 from each 
+
+
+
+#for each sample check total number of peaks, check intersection fraction etc
+
+
+  g100_kb_peak_indexs = which(distances > 100000)
+  g100_kb_sampled_indexs = sample(g100_kb_peak_indexs,size = 10)
+  g100kb_sampled_peaks = peak_list[g100_kb_sampled_indexs]
+
+
+
+
+dhs_threshold = 20
+kb100_threshold = 10
+
+
+locus_stats_df = data.frame(locus_stats)
+locus_stats_df$q75counts = "x"
+locus_stats_df$bottom75 = "x"
+locus_stats_df$q75counts_p = "x"
+locus_stats_df$bottom75_p = "x"
+for (i in 1:nrow(locus_stats_df)){
+  quant_list = locus_stats_df[i,"dhs_quants"][[1]]
+  if (is.na( as.numeric(table(quant_list)["75_1"]))){
+     locus_stats_df[i,"q75counts"] = 0
+  }
+  else{
+     locus_stats_df[i,"q75counts"] = as.numeric(table(quant_list)["75_1"])
+     locus_stats_df[i,"q75counts_p"] = as.numeric(table(quant_list)["75_1"])/length(quant_list)
+     
+  }
+  locus_stats_df[i,"bottom75"] = sum(table(quant_list)) - as.numeric(table(quant_list)["75_1"])
+  locus_stats_df[i,"bottom75_p"] = as.numeric(paste0(locus_stats_df[i,"bottom75"]))/length(quant_list)
+}
+
+locus_stats_df$g100kb = "x"
+locus_stats_df$l100kb = "x"
+locus_stats_df$g100kb_p = "x"
+locus_stats_df$l100kb_p = "x"
+for (i in 1:nrow(locus_stats_df)){
+  distances = locus_stats_df$dhs_nearest_tss_distance[[i]]
+  if (length(distances) == 0){
+    locus_stats_df[i,"g100kb"] = 0
+    locus_stats_df[i,"l100kb"] = 0
+  }
+  else{
+    g100kb_count = length(which(distances > 100000))
+    l100kb_count = length(which(distances <= 100000 & distances > 1000)) #want at least 1kb from promoter
+    locus_stats_df[i,"g100kb"] = g100kb_count
+    locus_stats_df[i,"l100kb"] = l100kb_count
+  }
+  locus_stats_df[i,"g100kb_p"] = as.numeric(paste0(locus_stats_df[i,"g100kb"]))/length(distances)
+  locus_stats_df[i,"l100kb_p"] = as.numeric(paste0(locus_stats_df[i,"l100kb"]))/length(distances)
+} 
+
+#get the potentially usable
+
+usable_loci = locus_stats_df[as.numeric(paste0(locus_stats_df$q75counts)) >= 20 & as.numeric(paste0(locus_stats_df$bottom75)) >= 20 & as.numeric(paste0(locus_stats_df$g100kb)) >= 10 & as.numeric(paste0(locus_stats_df$l100kb)) >= 30, ] #1005/2207 --> 45.5%
+
+usable_loci$peak_sample = "x"
+usable_loci$peak_sample_length = "x"
+for (i in 1:nrow(usable_loci)){
+  set.seed(100)
+  distances = usable_loci$dhs_nearest_tss_distance[[i]]
+  quant_list = usable_loci$dhs_quants[[i]]
+  peak_list = usable_loci$locus_dhs_ids[[i]]
+  g100_kb_peak_indexs = which(distances > 100000)
+  g100_kb_sampled_indexs = sample(g100_kb_peak_indexs,size = 10)
+  g100kb_sampled_peaks = peak_list[g100_kb_sampled_indexs]
+  q75_sampled_already = length(which(quant_list[g100_kb_sampled_indexs] == "75_1"))
+  l100_kb_peak_indexs = which(distances <= 100000 & distances > 100)
+  l100kb_peaks = peak_list[l100_kb_peak_indexs]
+  quants_l100kb_peaks = quant_list[l100_kb_peak_indexs]
+  top75_l100kb = l100kb_peaks[which(quants_l100kb_peaks == "75_1")]
+  bottom75_l100kb = l100kb_peaks[which(quants_l100kb_peaks != "75_1")]
+  if (length(top75_l100kb) >= (20 - q75_sampled_already)){
+    top75_l100kb_sampled = sample(top75_l100kb,size = 20 - q75_sampled_already)
+  }
+  else{
+    top75_l100kb_sampled = top75_l100kb
+  }
+  if (length(bottom75_l100kb) >= (40 - (length(top75_l100kb_sampled) + q75_sampled_already) - (10-q75_sampled_already))){
+    bottom75_l100kb_sampled = sample(bottom75_l100kb,size = (40 - (length(top75_l100kb_sampled) + q75_sampled_already) - (10-q75_sampled_already)))
+  }
+  else{
+    bottom75_l100kb_sampled #now add back in and extra top 75 if there are and get the total length
+  }
+  full_sample = unique(c(g100kb_sampled_peaks,top75_l100kb_sampled,bottom75_l100kb_sampled))
+  usable_loci[i,"peak_sample"] = paste0(full_sample,collapse = ";")
+  usable_loci[i,"peak_sample_length"] = length(full_sample)
+}
+  
+##just go back now and double check in case you're low on top peaks
+
+#make a final sample report
+
+usable_loci$sampled_stats = "x"
+usable_loci$sampled_quants = "x"
+usable_loci$sampled_nearest_tss_distance = "x"
+usable_loci$sampled_reads = "x"
+for (i in 1:nrow(usable_loci)){
+  distances = usable_loci$dhs_nearest_tss_distance[[i]]
+  quant_list = usable_loci$dhs_quants[[i]]
+  reads_list = usable_loci$dhs_reads[[i]]
+  all_locus_peak_list = usable_loci$locus_dhs_ids[[i]]
+  sampled_peak_list = str_split(usable_loci$peak_sample[[i]],pattern = ";")[[1]]
+  sampled_peak_indexs = c()
+  for (j in 1:length(sampled_peak_list)){
+    peak = sampled_peak_list[j]
+    peak_index = match(peak,all_locus_peak_list)
+    sampled_peak_indexs = c(sampled_peak_indexs,peak_index)
+  }
+  sampled_distances = distances[sampled_peak_indexs]
+  g100 = length(which(sampled_distances > 100000))
+  l100 = length(which(sampled_distances <= 100000 & sampled_distances > 1000))
+  sampled_quants = quant_list[sampled_peak_indexs]
+  sampled_reads = reads_list[sampled_peak_indexs]
+  q75 = length(which(sampled_quants == "75_1"))
+  b75 = length(which(sampled_quants != "75_1"))
+  usable_loci[i,"sampled_stats"] = paste0(c(g100,l100,q75,b75),collapse = ";")
+  usable_loci[i,"sampled_quants"] = paste0(sampled_quants, collapse = ";")
+  usable_loci[i,"sampled_reads"] = paste0(sampled_reads, collapse = ";")
+  usable_loci[i,"sampled_nearest_tss_distance"] = paste0(sampled_distances, collapse = ";")
+}
+
+best_loci = usable_loci[usable_loci$sampled_stats == "10;30;20;20",] #426
+
+#check genome distribution - one way to avoid any overlaps would be to do bedtools intersect with any loci, maybe do like 30 loci per rep and then do any removal
+#just need to check that within a given sample there's no overlap
+
+
+#retrying this with the actual locus stats printing, seem to find peaks outside of what i think the locus should be, need to redo the self intersection thing with this
+#central_genes = data.frame(genes[genes$gene_base_id %in% best_loci$locus,])
+#barplot(table(central_genes$seqnames),las = 2,ylab = "n usable loci")
+##central_genes_chr1 = central_genes[central_genes$seqnames == "chr1",]
+#plot(central_genes_chr1$start,1:nrow(central_genes_chr1),pch = 16, cex = 0.5)
+
+#barplot(table(central_genes$seqnames),ylab = "n best loci")
+
+#central_genes$start_minus1MB = as.numeric(paste0(central_genes$start)) - 1000000
+#central_genes$end_plus1MB = as.numeric(paste0(central_genes$end)) + 1000000
+best_loci$chr = "x"
+for (i in 1:nrow(best_loci)){
+  chr = str_split(best_loci[i,"locus_dhs_ids"][[1]][1],":")[[1]][1]
+  best_loci[i,"chr"]  = chr
+}
+
+
+
+#write this as a bedfile to see if any of these loci intersect eachother 
+bed_version = best_loci[,c("chr","locus_start","locus_end","locus")]
+write.table(bed_version,"/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/final_round_design/best_loci_loci_only_for_bedtools_intersect.bed",row.names =F, col.names = F,sep ='\t',quote = F)
+
+
+intersected_best_version = read.table("best_loci_loci_only_for_bedtools_intersect_self_intersect_self.bed",header=F,sep ='\t')
+
+intersected_best_version_non_self = intersected_best_version[intersected_best_version$V4 != intersected_best_version$V8,]
+
+number = runif(1,1,100000) #69167
+set.seed(69167)
+
+for (k in 0:100){
+set.seed(69167 + k)
+sample_best_loci_indexes = sample(1:nrow(best_loci),size = 25)
+best_loci_sample_1 = best_loci[sample_best_loci_indexes,] 
+#then check if multiple in the same intersected and remove
+sample_loci_intersect_tab = intersected_best_version_non_self[intersected_best_version_non_self$V4 %in% best_loci_sample_1$locus, ]
+
+write.table(bed_version[bed_version$locus %in% best_loci_sample_1$locus,],paste0("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/final_round_design/Potential_loci/loci_only_bed_version_rep",k,".bed"),sep = '\t',row.names = F, col.names = F,quote = F)
+best_loci_sample_1$gene_ids_print = "x"
+best_loci_sample_1$gene_names_print = "x"
+outfile_name = paste0("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/final_round_design/Potential_loci/sampled_peaks_rep",k,".txt")
+outfile = file(outfile_name)
+write(paste("locus","peak","peak_reads","peak_quant","peak_nearest_tss_distance","locus_genes_id", "locus_gene_names",sep = "\t"),outfile_name)
+for (i in 1:nrow(best_loci_sample_1)){
+  gene_ids = best_loci_sample_1[i,"gene_ids"][[1]]
+  best_loci_sample_1[i,"gene_ids_print"] = paste0(gene_ids,collapse = ";")
+  gene_names = best_loci_sample_1[i,"gene_names"][[1]]
+  best_loci_sample_1[i,"gene_names_print"] = paste0(gene_names,collapse = ";")
+  peaks = str_split(best_loci_sample_1[i,"peak_sample"],pattern = ";")[[1]]
+  sampled_reads = str_split(best_loci_sample_1[i,"sampled_reads"],pattern = ";")[[1]]
+  sampled_quants = str_split(best_loci_sample_1[i,"sampled_quants"],pattern = ";")[[1]]
+  sampled_nearest_tss_distance = str_split(best_loci_sample_1[i,"sampled_nearest_tss_distance"],pattern = ";")[[1]]
+  for (j in 1:length(peaks)){
+    write(paste(best_loci_sample_1[i,"locus"],peaks[j],sampled_reads[j],sampled_quants[j],sampled_nearest_tss_distance[j],best_loci_sample_1[i,"gene_ids_print"],best_loci_sample_1[i,"gene_names_print"],sep = "\t"),outfile_name,append = T)
+  }
+}
+#make 1 file with 1 row per loucs and another file with 1 row per peak with a locus id
+best_loci_sample_1_printv1 = data.frame(cbind(best_loci_sample_1$locus,best_loci_sample_1$dhs,best_loci_sample_1$gene_ids_print, best_loci_sample_1$gene_names_print,best_loci_sample_1$peak_sample, best_loci_sample_1$sampled_reads,best_loci_sample_1$sampled_quants,best_loci_sample_1$sampled_nearest_tss_distance ))
+
+colnames(best_loci_sample_1_printv1) = c("locus_central_gene","total_dhs","locus_gene_ids","locus_gene_names","sampled_peaks","sampled_peak_DHSreads","sampled_peak_quants","sampled_peaks_distance_to_nearest_tss")
+write.table(best_loci_sample_1_printv1,paste0("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/final_round_design/Potential_loci/sampled_loci_rep",k,".txt"),quote=F ,sep = "\t",row.names = F)
+}
+
+
+
+
+#of 725, 302 have the perfect 10;30;20;20
+#P1 classes
+
+##test if the best loci are unusual - plot the proportial hds, the faction tss, the total number, color the usable
+
+locus_stats_df$isbest = 0
+for (i in 1:nrow(locus_stats_df)){
+  if (paste0(locus_stats_df[i,"locus"]) %in% paste0(best_loci$locus)) {
+    locus_stats_df[i,"isbest"] = 1
+  }
+}
+locus_stats_df_odhs = locus_stats_df[order(as.numeric(paste0(locus_stats_df$q75counts_p)),decreasing = F),]
+locus_stats_df_odhs$dhs_rank = 1:nrow(locus_stats_df_odhs)
+plot(locus_stats_df_odhs$dhs_rank,as.numeric(paste0(locus_stats_df_odhs$q75counts_p)),pch = 16, cex = 0.5, main = "All TPM > 50 loci",ylab = "% q75 peaks",xlab = "rank")
+legend("topleft",fill = c("black","red"),legend = c("all","usable"))
+best = locus_stats_df_odhs[locus_stats_df_odhs$isbest == 1,]
+points(best$dhs_rank,as.numeric(paste0(best$q75counts_p)),pch =16, cex = 0.5, col = "red")
+
+
+locus_stats_df_otss = locus_stats_df[order(as.numeric(paste0(locus_stats_df$g100kb_p)),decreasing = F),]
+locus_stats_df_otss$dhs_rank = 1:nrow(locus_stats_df_otss)
+plot(locus_stats_df_otss$dhs_rank,as.numeric(paste0(locus_stats_df_otss$g100kb_p)),pch = 16, cex = 0.5, main = "All TPM > 50 loci",ylab = "% >100kb nearest Tss",xlab = "rank")
+legend("topleft",fill = c("black","red"),legend = c("all","usable"))
+best = locus_stats_df_otss[locus_stats_df_otss$isbest == 1,]
+points(best$dhs_rank,as.numeric(paste0(best$g100kb_p)),pch =16, cex = 0.5, col = "red")
+
+locus_stats_df_npeaks = locus_stats_df[order(as.numeric(paste0(locus_stats_df$dhs)),decreasing = F),]
+locus_stats_df_npeaks$dhs_rank = 1:nrow(locus_stats_df_npeaks)
+plot(locus_stats_df_npeaks$dhs_rank,as.numeric(paste0(locus_stats_df_npeaks$dhs)),pch = 16, cex = 0.5, main = "All TPM > 50 loci",ylab = "npeaks",xlab = "rank")
+legend("topleft",fill = c("black","red"),legend = c("all","usable"))
+best = locus_stats_df_npeaks[locus_stats_df_npeaks$isbest == 1,]
+points(best$dhs_rank,as.numeric(paste0(best$dhs)),pch =16, cex = 0.5, col = "red")
+
+#this all looks good:
+
+boxplot(as.numeric(paste0(locus_stats_df$q75counts_p)) ~ locus_stats_df$isbest,ylab = "% DHS q75",xlab = "usable")
+
+boxplot(as.numeric(paste0(locus_stats_df$g100kb_p)) ~ locus_stats_df$isbest,ylab = "% >100kb tss",xlab = "usable")
+
+boxplot(as.numeric(paste0(locus_stats_df$dhs)) ~ locus_stats_df$isbest,ylab = "n_peaks",xlab = "usable")
+
+boxplot(as.numeric(paste0(locus_stats_df$genes)) ~ locus_stats_df$isbest,ylab = "n_genes",xlab = "usable")
+
+boxplot(as.numeric(paste0(locus_stats_df$genes_above_tpm)) ~ locus_stats_df$isbest,ylab = "n_genes_above50tpm",xlab = "usable")
+
+
+promoter_classifications = read.table("prom_gw_prediction.csv",header=T,sep = ",")
+
+locus_stats_df$perc_p2 = "x"
+locus_stats_df$perc_p1 = "x"
+locus_stats_df$perc_p0 = "x"
+for (i in 1:nrow(locus_stats_df)){
+  cat(i," ")
+  locus_genes = locus_stats_df$gene_names[[i]]
+  p2_count = 0
+  p1_count = 0
+  p0_count = 0
+  for (gene in locus_genes){
+    promoter_tab = promoter_classifications[paste0(promoter_classifications$name) == gene,]
+    if (nrow(promoter_tab) == 1){
+      class = promoter_tab[1,"predicted"]
+      if (class == 2){
+        p2_count = p2_count + 1
+      }
+      else if (class == 1){
+        p1_count = p1_count + 1
+      }
+      else if (class == 0){
+        p0_count = p0_count + 1
+      }
+    }
+  }
+  locus_stats_df[i,"perc_p2"] = p2_count/length(locus_genes)
+  locus_stats_df[i,"perc_p1"] = p1_count/length(locus_genes)
+  locus_stats_df[i,"perc_p0"]= p0_count/length(locus_genes)
+}
+
+boxplot(as.numeric(paste0(locus_stats_df$perc_p2)) ~ locus_stats_df$isbest,xlab = "usable",ylab = "% p2 predicted promoters in locus")
+
+boxplot(as.numeric(paste0(locus_stats_df$perc_p1)) ~ locus_stats_df$isbest,xlab = "usable",ylab = "% p1 predicted promoters in locus")
+
+boxplot(as.numeric(paste0(locus_stats_df$perc_p0)) ~ locus_stats_df$isbest,xlab = "usable",ylab = "% p0 predicted promoters in locus")
+
+
+
+
+
+#mean(as.numeric(paste0(locus_stats_df[locus_stats_df$isbest == 0,"perc_p2"])))
+#0. 0.3777979
+#mean(as.numeric(paste0(locus_stats_df[locus_stats_df$isbest == 1,"perc_p2"])))
+#0.415975
+
+mean(as.numeric(paste0(locus_stats_df[locus_stats_df$isbest == 0,"perc_p1"])))
+#0. 0.31
+mean(as.numeric(paste0(locus_stats_df[locus_stats_df$isbest == 1,"perc_p1"])))
+#0.32
+
+
+#get all the stats you want in one table then set a random seed at get 25, make maybe 3 sets of 25 send to dulguun or something
+#one version with 1 row per each locus
+#one version with 1 row per peak with locus numbers
+#also check the p1 p2 thing
+  
+
+
+#old and extra
+'
+  if (length(top75_l100kb) >= (20 - q75_sampled_already) & length(bottom75_l100kb) >= 20 - (10-q75_sampled_already)){
+      top75_l100kb_sampled = sample(top75_l100kb,size = 20 - q75_sampled_already)
+      bottom75_l100kb_sampled = sample(bottom75_l100kb,size = 20 - (10-q75_sampled_already))
+      full_sample = unique(c(g100kb_sampled_peaks,top75_l100kb_sampled,bottom75_l100kb_sampled))
+      usable_loci[i,"peak_sample"] = paste0(full_sample,collapse = ";")
+  }
+  else{
+    usable_loci$peak_sample = "x"
+  }
+}
+
+dim(usable_loci[usable_loci$peak_sample != "x",]) #can do +/- 2 and see what that gets you 
+
+distances = rep_tab$dhs_nearest_tss_distance[[i]]
+        sampled_distances  = distances[full_sample]
+        g100kb_sampled = which(sampled_distances > 100000)
+'
+
+
+#get_threshold_counts = function(sample_reps,dhs_threshold,kb100_threshold){
+'sample_rep_df = data.frame(sample_reps)
+sample_rep_df$q75counts = "x"
+sample_rep_df$bottom75 = "x"
+for (i in 1:nrow(sample_rep_df)){
+  quant_list = sample_rep_df[i,"dhs_quants"][[1]]
+  if (is.na( as.numeric(table(quant_list)["75_1"]))){
+     sample_rep_df[i,"q75counts"] = 0
+  }
+  else{
+     sample_rep_df[i,"q75counts"] = as.numeric(table(quant_list)["75_1"])
+  }
+  sample_rep_df[i,"bottom75"] = sum(table(quant_list)) - as.numeric(table(quant_list)["75_1"])
+}
+
+#okay start don even random sample, just divide all the loci up into the 4 metrics, and 
+
+'good_loci_tss = c()
+good_loci_dhs_rep = c()
+good_loci_tss_and_dhs = c()
+good_loci_tss_and_dhs_counts = c()
+for(rep in unique(sample_rep_df$rep)){
+  rep_tab = sample_rep_df[sample_rep_df$rep == rep,]
+  good_loci_dhs = rep_tab[rep_tab$q75counts >= dhs_threshold, "locus"]
+  if (length(good_loci_dhs) >= 25){
+      for (i in 1:length(good_loci_dhs)){
+        quant_list = rep_tab$dhs_quants[[i]]
+        top_dhs_indexs = which(quant_list == "75_1")
+        bottom_dhs_indexs = which(quant_list != "75_1")
+        top_dhs_indexs_sample = sample(top_dhs_indexs,size = 20,replace = F)
+        bottom_dhs_indexs_sample = sample(bottom_dhs_indexs,size = 20,replace = F)
+        full_sample = c(top_dhs_indexs_sample,bottom_dhs_indexs_sample)
+        distances = rep_tab$dhs_nearest_tss_distance[[i]]
+        sampled_distances  = distances[full_sample]
+        g100kb_sampled = which(sampled_distances > 100000)
+        
+  }
+  }
+  # these are loci with enough DHS peaks in the top to be usable now take a sample of those and see the proporiton of distance, just do lots of reps til you get the desired proportions i think, can also try it with just rating the samples at the end
+
+  
+  
+  
+  
+  
+  
+  good_loci_dhs_rep = c(good_loci_dhs_rep,  paste0(good_loci,collapse = ";"))
+  tss_loci_usable = c()
+   
+  #outfile_name = paste0("crispri_sampled_loci_rep",i,".txt")
+  #outfile = file(outfile_name)
+  #write("Header")
+  for (i in 1:length(rep_tab$dhs_nearest_tss_distance)){
+    distances = rep_tab$dhs_nearest_tss_distance[[i]]
+    g100kb_peaks_per_locus = c()
+    l100kb_peaks_per_locus = c()
+    if (length(distances) != 0){
+      
+    for (j in 1:length(distances)){
+      if (distances[j] > 100000){
+        g100kb_peaks_per_locus = c(g100kb_peaks_per_locus,rep_tab$locus_dhs_ids[[i]][j])
+      }
+      else{
+        l100kb_peaks_per_locus = c(l100kb_peaks_per_locus,rep_tab$locus_dhs_ids[[i]][j])
+      }
+    }
+    }
+    if (length(g100kb_peaks_per_locus) >= kb100_threshold & length(l100kb_peaks_per_locus) >= 40 - kb100_threshold){
+      tss_loci_usable = c(tss_loci_usable,rep_tab$locus[i])
+    }
+  
+  }
+  
+  good_loci_tss = c(good_loci_tss,paste0(tss_loci_usable, collapse = ";"))
+  
+  
+  usable_both = intersect(tss_loci_usable,good_loci_dhs)
+  good_loci_tss_and_dhs = c(good_loci_tss_and_dhs, paste0(usable_both,collapse = ";"))
+  good_loci_tss_and_dhs_counts = c(good_loci_tss_and_dhs_counts,length(usable_both))
+}
+  
+output_tab = data.frame(cbind(unique(sample_rep_df$rep),good_loci_tss_and_dhs_counts,good_loci_tss_and_dhs))
+colnames(output_tab) = c("rep","n_usable_loci","usable_loci")
+#return(output_tab)
+#}
+
+#need 25 loci - each that you could pick 
+#rep_reports = get_threshold_counts(sample_reps = sample_reps,20,10)
+
+rep_reports = output_tab #just need to figure out now what to do, maybe just try random sampling 40 from a random 25 of these loci and then get the final proportions
+
+
+#figure this out, you have it all set up well just figure out what's happening with the reps above
+'for (i in 1:nrow(rep_reports)){
+  #outfile_name = paste0("crispri_sampled_loci_rep",i,".txt")
+  #outfile = file(outfile_name)
+  #write("Header")
+  usable_loci = str_split(rep_reports[i,"usable_loci"],pattern = ";")[[1]]
+  usable_25 = sample(usable_loci,25,replace = F)
+  for (locus in usable_25){
+    all_locus_stats = data.frame(sample_reps[sample_reps$locus == locus & sample_reps$rep == i,])
+  }
+}
+
+'
+
+
+
+
+#i think what you need to do is for each rep -print file with locus - peaks and the relevant stats for the peak for dulguun to confirm
+#usable one, print a file with locus 
+
+#then need to extract the locus data from the locus stats and print that for Dulguun
+#clean up the script for the final report and do some data analysis / clean up
+#also can overlay with the P1 and P2 stuff
+
+
+#now add in distance and you'll be good, can for each locus in a rep give it a usable or not usable score, and then have it randomly sample from within those from a final random product for dulguun to look at
+
+##get the stats i think for granges there's a way to find nearest for the tss
+
+p2 <- sample_reps %>% 
+  dplyr::select(rep, locus, dhs_reads) %>% 
+  unnest(cols = dhs_reads) %>% 
+  ggplot(., aes(x = rep, y = dhs_reads + 1)) +
+    geom_violin(fill = hsv(h = 0.1, s = 0.8, alpha = 1)) +
+    stat_summary(fun = median, geom = "point", size = 1, color = "black") +
+    labs(title = paste0("DNase-seq reads in peaks across repetitive sampling (25 each)"),
+       x = "Repetition", y = "DNase-seq reads across sampled peaks") +
+    scale_y_log10() +
+    theme_bw()
+
+
+# plot locus stats for all repetitions
+sample_reps %>% 
+  dplyr::select(rep, locus, DHS = dhs, Genes = genes, `Genes above 50 TPM` = genes_above_tpm) %>% 
+  pivot_longer(cols = -c(rep, locus), names_to = "stat", values_to = "value") %>% 
+  ggplot(., aes(x = value, fill = stat)) +
+    facet_grid(rep~stat, scale = "free") +
+    geom_histogram(bins = 20) +
+    labs(title = paste0("Locus stats across repetitive sampling (25 each)"),
+         x = "Number of DHS/Genes/Genes above 50 TPM",
+         y = "Number of loci") +
+    scale_fill_manual(values = colors) +
+    theme_bw()
+
+
+sample_reps_dataframe = data.frame(sample_reps)
+
+
+
+
+```
+
+Plot locus stats across sampled loci as one violin plot per repetition for easier comparison (dots
+represent median).
+
+```{r sampledLocusStats2, fig.height=6, fig.width=8}
+# plot sampled locus stats as violin plots
+sample_reps %>% 
+  dplyr::select(rep, locus, DHS = dhs, Genes = genes, `Genes above 50 TPM` = genes_above_tpm) %>% 
+  pivot_longer(cols = -c(rep, locus), names_to = "stat", values_to = "value") %>% 
+  ggplot(., aes(x = rep, y = value, fill = stat)) +
+    facet_wrap(~stat, scale = "free", ncol = 1) +
+    geom_violin() +
+    geom_jitter(width = 0.15, shape = 21, size = 1.2) +
+    stat_summary(fun = median, geom = "point", size = 2.5, fill = "firebrick2", shape = 23) +
+    labs(title = paste0("Locus stats across repetitive sampling (25 each)"),
+       x = "Repetition", y = "Number of DHS/Genes/Genes above 50 TPM") +
+    scale_fill_manual(values = colors) +
+    theme_bw() +
+    theme(legend.position = "none")
+```
+
+The "locus composition" appears quite variable between random samples, probably due to only picking
+25 loci at a time.
+
+Let's look at how variable the DNase-seq reads per peak are across random samples.
+
+```{r sampledDNaseReads, message=FALSE, fig.height=5, fig.width=7}
+# plot the total number of DHS per repetition
+p1 <- sample_reps %>% 
+  group_by(rep) %>% 
+  summarize(total_dhs = sum(dhs)) %>% 
+  ggplot(., aes(x = rep, y = total_dhs)) +
+    geom_bar(stat = "identity") +
+    labs(x = "Repetition", y = "Total DHS") +
+    theme_bw()
+
+# plot the number of DNase-seq reads across sampled peaks
+p2 <- sample_reps %>% 
+  dplyr::select(rep, locus, dhs_reads) %>% 
+  unnest(cols = dhs_reads) %>% 
+  ggplot(., aes(x = rep, y = dhs_reads + 1)) +
+    geom_violin(fill = hsv(h = 0.1, s = 0.8, alpha = 1)) +
+    stat_summary(fun = median, geom = "point", size = 1, color = "black") +
+    labs(title = paste0("DNase-seq reads in peaks across repetitive sampling (25 each)"),
+       x = "Repetition", y = "DNase-seq reads across sampled peaks") +
+    scale_y_log10() +
+    theme_bw()
+
+# arrange plots
+plot_grid(p1, p2, ncol = 1, rel_heights = c(0.4, 0.6))
+
+
+#EJ Here's the important stuff
+
+#for each of these samples, want to know how many of the DHS peaks are in top top 75% quant, in the 50-75%, in the 25% quant
+#x = sample_reps %>% dplyr::select(rep, locus, dhs_reads) %>% unnest(cols = dhs_reads)
+
+#x = unnest()
+
+
+sample_reps_normal = data.frame(sample_reps)
+sample_reps_normal$dhs_75quant = "x"
+sample_reps_normal$dhs_50quant_75 = "x"
+sample_reps_normal$dhs_25quant_50 = "x"
+sample_reps_normal$dhs_0quant_25 = "x"
+
+dhs_75_quant = quantile(dhs$reads,0.75) #578
+dhs_50_quant = quantile(dhs$reads,0.5) #262
+dhs_25_quant = quantile(dhs$reads,0.25) #130
+
+
+for (i in 1:nrow(sample_reps_normal)){
+  q75_count = 0
+  q50_count = 0
+  q25_count = 0
+  q0_count = 0
+  peak_reads_list = as.list(sample_reps_normal[i,"dhs_reads"])[[1]]
+  for (p in peak_reads_list){
+    if (p >+ dhs_75_quant){
+      q75_count = q75_count + 1
+    }
+    else if (p < dhs_75_quant & p >= dhs_50_quant){
+      q50_count = q50_count + 1
+    }
+    else if (p < dhs_50_quant & p >= dhs_25_quant){
+      q25_count = q25_count + 1
+    }
+    else if (p < dhs_25_quant){
+      q0_count = q0_count + 1
+    }
+  }
+  sample_reps_normal[i,"dhs_75quant"] = q75_count
+  sample_reps_normal[i,"dhs_50quant_75"] = q50_count
+  sample_reps_normal[i,"dhs_25quant_50"] = q25_count
+  sample_reps_normal[i,"dhs_0quant_25"] = q0_count
+}
+
+
+greater_than_20 = c()
+for (r in unique(sample_reps_normal$rep)){
+  q75_counts = sample_reps_normal[sample_reps_normal$rep == r, "dhs_75quant"]
+  count = 0
+  for (c in q75_counts){
+    if (as.numeric(paste0(c)) >= 20){
+      count = count + 1
+    }
+  }
+  greater_than_20 = c(greater_than_20,count)
+}
+
+p = ggplot(sample_reps_normal,aes(x = rep, y = as.numeric(paste0(dhs_75quant)))) + geom_violin() +
+  geom_jitter(width = 0.1, cex = 0.5)+ 
+  ylab(label = "Number of Peaks per Sample with DHS Read Count > 75quant")
+
+
+
+p = ggplot(sample_reps_normal,aes(x = rep, y = as.numeric(paste0(dhs_50quant_75)))) + geom_violin() +
+  geom_jitter(width = 0.1, cex = 0.5)+ 
+  ylab(label = "Number of Peaks per Sample with DHS Read Count > 50quant < 70quant")
+
+p = ggplot(sample_reps_normal,aes(x = rep, y = as.numeric(paste0(dhs_25quant_50)))) + geom_violin() +
+  geom_jitter(width = 0.1, cex = 0.5)+ 
+  ylab(label = "Number of Peaks per Sample with DHS Read Count > 25quant < 50quant")
+
+p = ggplot(sample_reps_normal,aes(x = rep, y = as.numeric(paste0(dhs_25quant_50)))) + geom_violin() +
+  geom_jitter(width = 0.1, cex = 0.5)+ 
+  ylab(label = "Number of Peaks per Sample with DHS Read Count < 25quant")
+
+
+sample_reps_normal$q75_fraction = as.numeric(paste0(sample_reps_normal$dhs_75quant))/as.numeric(paste0(sample_reps_normal$dhs))
+
+
+p = ggplot(sample_reps_normal,aes(x = rep, y = as.numeric(paste0(q75_fraction)))) + geom_violin() +
+  geom_jitter(width = 0.1, cex = 0.5)+ 
+  ylab(label = "Fraction of Peaks per Sample with DHS Read Count >= 75quant")
+
+
+#rep1_dhs_peak_reads = sample_reps_normal[1,"dhs_reads"]
+
+```
+
+
+
+Because of the large number of sampled peaks, to reads per peak distributions are relatively stable
+across sampling repetitions. From an enhancer-centric perspective this means that we capture a
+similarly active enhancer landscape with each random sample.
+
+We can also look at the TPM distribution of genes within loci across random samples of 25 loci.
+Note that this excludes genes without TPM data.
+
+```{r, fig.height=5, fig.width=7}
+# count the number of genes per sample
+p1 <- sample_reps %>% 
+  group_by(rep) %>% 
+  summarize(genes_with_tpm_data = sum(genes_with_tpm_data),
+            genes_without_tmp_data = sum(genes_without_tmp_data),
+            genes_above_50tpm = sum(genes_above_tpm)) %>% 
+  pivot_longer(cols = -rep, names_to = "stat", values_to = "n_genes") %>% 
+  ggplot(., aes(x = rep, y = n_genes, fill = stat)) +
+    geom_bar(stat = "identity") +
+    labs(x = "Repetition", y = "Total genes", fill = "Gene group") +
+    scale_fill_manual(
+      values = c(genes_above_50tpm = "steelblue4", genes_with_tpm_data = "steelblue1",
+                 genes_without_tmp_data = "gray")) +
+    theme_bw() +
+    theme(legend.position = "top")
+
+# plot the TPM across sampled genes
+p2 <- sample_reps %>% 
+  select(rep, locus, tpm_values) %>% 
+  unnest(cols = tpm_values) %>% 
+  ggplot(., aes(x = rep, y = tpm_values + 1)) +
+    geom_violin(fill = "steelblue3") +
+    stat_summary(fun = median, geom = "point", size = 1, color = "black") +
+    geom_hline(yintercept = 50) +
+    labs(title = paste0("TPM of genes across repetitive sampling (25 each)"),
+       x = "Repetition", y = "TPM across genes in sampled loci") +
+    scale_y_log10() +
+    theme_bw()
+
+# arrange plots
+plot_grid(p1, p2, ncol = 1, rel_heights = c(0.45, 0.55))
+
+
+
+
+#checking the peaks that overlap tss
+
+
+sampled_peaks_tss_overlap = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/final_K562_sampled_peaks_TSS_TPM.txt",header = F)
+colnames(sampled_peaks_tss_overlap) = c("chr","start","end","TSS","TPM")
+sampled_peaks_tss_overlap$peak = paste0(sampled_peaks_tss_overlap$chr,":",sampled_peaks_tss_overlap$start,"_",sampled_peaks_tss_overlap$end)
+
+
+sampled_peaks_rep_6 = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/sampled_peaks_rep6.txt",header=T,sep = '\t',fill = T)
+sampled_peaks_rep_6_small = sampled_peaks_rep_6[,c("peak","peak_reads")]
+#310 
+table(sampled_peaks_rep_6_small$peak_reads)
+merged = merge(sampled_peaks_tss_overlap,sampled_peaks_rep_6_small)
+table(merged$peak_reads)
+#109 
+
+#if we threw all of them out would reduce us to 20.1% dhs quant which is fine
+table(merged[merged$TPM >= 30,"peak_reads"])
+#52
+
+table(merged[merged$TPM >= 10,"peak_reads"]) #76
+
+#87
+
+#rep 6 pick the locus + 3 additional genes
+v26_df = data.frame(v26)
+rep6_tab = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/rep_6_locus_info_genes_>50tpm.txt",header=T,sep = "\t")
+good_tpm_list = gsub("c[(]","",rep6_tab$genes_above_tpms_list)
+good_tpm_listt = gsub("[)]","",good_tpm_list)
+rep6_tab$genes_above_tpms_list_good = good_tpm_listt
+rep6_tab$genes_above_tpms_list = NULL
+set.seed(20)
+rep6_tab$additional_3genes = "x"
+rep6_tab$locus_gene_name = "x"
+for (i in 1:nrow(rep6_tab)){
+ locus_gene = rep6_tab[i,"locus"]    
+    locus_gene_name = unique(v26_df[v26_df$gene_base_id == locus_gene,"gene_name"])
+    rep6_tab[i,"locus_gene_name"] = locus_gene_name  
+  if (rep6_tab[i,"genes_above_tpms"] != 1){
+    gene_list = str_split(rep6_tab$genes_above_tpms_list_good[i],pattern = ", ")[[1]]
+    other_genes_list = gene_list[which(grepl(gene_list,pattern = locus_gene) == F)]
+    other_genes_list_gene_name = c()
+    for (gene in other_genes_list){
+      gene_name = unique(v26_df[v26_df$gene_base_id == gene,"gene_name"])
+      other_genes_list_gene_name = c(other_genes_list_gene_name,gene_name)
+    }
+    if (length(other_genes_list) <= 3){
+      rep6_tab[i,"additional_3genes"] = paste(other_genes_list_gene_name,collapse =";")
+    }
+    else{
+        sampled_other_genes = sample(other_genes_list_gene_name,3)
+      rep6_tab[i,"additional_3genes"] = paste(sampled_other_genes,collapse =";")
+    }
+}
+    }
+write.table(rep6_tab,"/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/rep_6_loci_with_3_other_>50tpm_genes.txt",quote = F,sep = '\t',row.names = F)
+
+#expand to >40, >30
+
+rep6_tab = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/rep_6_loci_with_3_other_>50tpm_genes.txt",header=T,sep = '\t')
+
+#want max 10 genes per locus, so maybe 
+#all numbers are not i
+rep6_tab$n_genes_g_40tpm = "x"
+rep6_tab$n_genes_g_30tpm = "x"
+rep6_tab$genes_g_40tpm = "x"
+rep6_tab$genes_g_30tpm = "x"
+for (i in 1:nrow(rep6_tab)){
+ locus_gene = rep6_tab[i,"locus"]
+ locus_gene_name = unique(v26_df[v26_df$gene_base_id == locus_gene,"gene_name"])
+ locus_stats_tab = locus_stats_df[locus_stats_df$locus == locus_gene,]
+ gene_list = locus_stats_tab[1,"gene_names"][[1]]
+ gene_tpm_tab = data.frame(tpm[tpm$gene_name %in% gene_list,])
+ rep6_tab[i,"n_genes_g_40tpm"] = nrow(gene_tpm_tab[gene_tpm_tab$tpm >= 40,])
+ rep6_tab[i,"genes_g_40tpm"] = paste0(gene_tpm_tab[gene_tpm_tab$tpm >= 40,"gene_name"],collapse = ";")
+ rep6_tab[i,"n_genes_g_30tpm"] = nrow(gene_tpm_tab[gene_tpm_tab$tpm >= 30,])
+ rep6_tab[i,"genes_g_30tpm"] = paste0(gene_tpm_tab[gene_tpm_tab$tpm >= 30,"gene_name"],collapse = ";")
+}
+
+
+write.table(rep6_tab,"/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/rep_6_loci_with_3_other_>50tpm_genes_w_g_40_w_g_30.txt",quote = F,sep = '\t',row.names = F)
+
+rep6_tab = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/rep_6_loci_with_3_other_>50tpm_genes_w_g_40_w_g_30.txt",header=T,sep = '\t')
+hist(as.numeric(paste0(rep6_tab$n_genes_g_30tpm)),breaks = 40)
+ggplot(rep6_tab, aes(n_genes_g_30tpm))+
+  geom_histogram(binwidth = 0.5)+
+  scale_x_continuous(breaks = seq(0,30,by = 2))+
+  ylab("n loci")+
+  xlab("Genes >30 tpm")
+
+genes_k = c()
+for (i in 1:nrow(rep6_tab)){
+  genes_k = c(genes_k,rep6_tab[i,"locus_gene_name"])
+  ad_genes = rep6_tab[i,"genes_g_30tpm"] 
+  if (ad_genes != "x"){
+    other_genes = str_split(ad_genes,pattern = ";")[[1]] 
+    genes_k = c(genes_k,other_genes)
+  }
+}
+length(unique(genes_k))
+exper_tab = data.frame(tpm[tpm$gene_name %in% genes_k,])
+exper_tab$type = "x"
+for (i in 1:nrow(exper_tab)){
+  if (exper_tab[i,"gene_name"] %in% rep6_tab$locus_gene_name){
+    exper_tab[i,"type"] = "central_gene"
+  }
+  else{
+    exper_tab[i,"type"] = "locus_gene"
+  }
+}
+
+#k562_control_genes = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/K562_Positive_Control_Genes.txt",header=F,sep = '\t')
+
+k562_control_genes = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/K562_Positive_Controls_update.txt",header =F,sep = '\t')
+k562_control_genes$V2 = NULL
+colnames(k562_control_genes) = "gene"
+k562_control_genes_w_tpm = tpm[tpm$gene_name %in% k562_control_genes$gene,]
+k562_control_genes_w_tpm$type = "control"
+
+full_k562_tpm_tab = data.frame(rbind(exper_tab,k562_control_genes_w_tpm))
+
+write.table(full_k562_tpm_tab,"/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/K562_rep_6_genes_g30_and_controls_tpm_tab_take2.txt",quote =F,sep = "\t",row.names = F)
+
+full_k562_tpm_tab = read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/K562_rep_6_genes_g30_and_controls_tpm_tab.txt")
+
+#use_tab = dim(full_k562_tpm_tab[full_k562_tpm_tab$V4 == "central_gene",])
+
+full_k562_tpm_tab_o = full_k562_tpm_tab[order(full_k562_tpm_tab$tpm),]
+full_k562_tpm_tab_o$rank = 1:nrow(full_k562_tpm_tab_o)
+
+p1 = ggplot(full_k562_tpm_tab_o, aes(x = as.numeric(paste0(rank)),y = as.numeric(paste0(tpm))))+
+  geom_point()+
+  geom_text(data = full_k562_tpm_tab_o[full_k562_tpm_tab_o$tpm > 1000,],aes( as.numeric(paste0(rank)),y = as.numeric(paste0(tpm)),label = paste0(gene_name,"_",type)),hjust = 1.2, check_overlap = F)+
+  ylab("TPM")+
+  xlab("rank")
+
+pz = ggplot(full_k562_tpm_tab_o[full_k562_tpm_tab_o$tpm > 200,], aes(x = as.numeric(paste0(rank)),y = as.numeric(paste0(tpm))))+
+  geom_point()+
+  geom_text(data = full_k562_tpm_tab_o[full_k562_tpm_tab_o$tpm > 1000,],aes( as.numeric(paste0(rank)),y = as.numeric(paste0(tpm)),label = paste0(gene_name,"_",type)),hjust = 1.2)+
+  ylab("TPM")+
+  xlab("rank")
+
+grid.arrange(p1,pz,nrow = 1)
+
+
+##
+#get_negative_controls
+setwd("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/")
+tpm = read_csv("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/tpm.csv",col_types = cols(.default = col_character(),tpm = col_double()))
+
+use_set =read.table("/Users/ejagoda/Documents/HGRM/Encode_Crispri_Screen/totally_random_design/potential_loci/K562_rep_6_genes_g30_and_controls_tpm_tab_w_use.txt",header = T,sep = '\t')
+
+use_set_in26 = intersect(use_set$gene_name, v26$gene_name) #265 #everyone, there's 1 repeat
+use_set_in26_id = intersect(use_set$gene, v26$gene_base_id) #265
+use_set_in29 = intersect(use_set$gene_name, v29$gene_name) #261
+missing = use_set[which(use_set$gene_name %in% v29$gene_name == F),]
+
+hist(use_set[use_set$use == "yes","tpm"], breaks = 1000)
+
+tpm_subset = tpm[tpm$tpm >= 30 & tpm$tpm <=150 &  tpm$gene_name %in% use_set$gene_name == F & tpm$gene_name %in% v29_protein$gene_name,]
+tpm_subset_50 = tpm_subset[sample(1:nrow(tpm_subset),size = 50),]
+hist(tpm_subset_50$tpm)
+#write.table(tpm_subset_50,"k562_negative_controls_random_set.txt",quote = F,sep = '\t',row.names = F)
+
+neg_control_random_set = read.table("k562_negative_controls_random_set.txt",header=T,sep = '\t')
+neg_control_random_set$type = "neg_control"
+neg_control_random_set$use = "yes"
+full_set = rbind(use_set,neg_control_random_set)
+
+v29_df = data.frame(v29)
+
+v29_protein = v29[v29$gene_type == "protein_coding" &v29$type == "gene" &
+               seqnames(v29) %in% paste0("chr", c(1:22, "X")) ,]
+
+
+full_set$gene_name_v29 = "x"
+for(i in 1:nrow(full_set)){
+  ensemble_name = full_set[i,"gene"]
+  name_v29 = v29_df[v29_df$gene_base_id == ensemble_name,"gene_name"][1]
+  full_set[i,"gene_name_v29"] = name_v29
+}
+full_set_use = full_set[full_set$use == "yes",]
+
+write.table(full_set_use,"K562.rep6.GenesForTAPseq_wV29_genenames.txt",quote = F,sep = '\t')
+full_set_use = read.table("K562.rep6.GenesForTAPseq_wV29_genenames.txt",header = T,sep = '\t')
+range(full_set_use$tpm)
+#length(full_set_use$gene_name_v29 %in% v29_protein$gene_name)
+
+full_set_use[full_set_use$gene_name_v29 %in% setdiff(full_set_use$gene_name_v29,v29_protein$gene_name),]
+#CCDC26  lincRNA
+# RAB30-AS1 lincRNA #remove this one --> SNAPIN
+
+tpm_add = tpm[tpm$gene_name == "SNAPIN",]
+tpm_add$type = "neg_control"
+tpm_add$use = "yes"
+tpm_add$gene_name_v29 = tpm_add$gene_name
+full_set_use2 = rbind(full_set_use,tpm_add)
+full_set_use3 = full_set_use2[full_set_use2$gene_name != "RAB30-AS1",]
+write.table(full_set_use3,"K562.rep6.GenesForTAPseq_wV29_genenames_controls_fixed.txt",quote = F,sep ='\t')
+```
