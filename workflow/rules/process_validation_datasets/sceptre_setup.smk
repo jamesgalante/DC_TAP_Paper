@@ -43,14 +43,18 @@ rule process_cell_ranger_outputs_K562_DC_TAP_Seq:
 # The guide design files were copied from [,] into the resources directory 
   # /oak/stanford/groups/engreitz/Users/dulguun/CRISPRDesign/220308_Random_Screen_FinalDesignFiles/220308_K562_Random_Screen_Crop.design.txt
   # /oak/stanford/groups/engreitz/Users/dulguun/CRISPRDesign/220308_Random_Screen_FinalDesignFiles/220308_WTC11_Random_Screen_Crop.design.txt
-
+  
+  
+# I think i can drastically shorten this process with this file: "https://github.com/EngreitzLab/DC_TAP_paper/blob/main/inputs_for_Table_SX_RandomScreenDesign_guides_3_4/new_merged_k562_grna_groups_table_fixed.txt"
+# Everything except the merging
 rule create_K562_DC_TAP_Seq_guide_targets:
   input:
     guide_design_file = "resources/process_validation_datasets/sceptre_setup/K562_DC_TAP_Seq/220308_K562_Random_Screen_Crop.design.txt",
     
     ### TEMP UNTIL SCREEN DESIGN IN PIPELINE
     positive_controls = "resources/process_validation_datasets/sceptre_setup/K562_DC_TAP_Seq/ChosenGenes.AllRegions.bed",
-    old_guide_targets = "resources/process_validation_datasets/sceptre_setup/K562_DC_TAP_Seq/old_guide_targets.tsv"
+    old_guide_targets = "resources/process_validation_datasets/sceptre_setup/K562_DC_TAP_Seq/old_guide_targets.tsv",
+    old_pre_merged_guide_targets = "resources/process_validation_datasets/sceptre_setup/K562_DC_TAP_Seq/even_older_guide_targets.tsv"
     ### TEMP UNTIL SCREEN DESIGN IN PIPELINE
     
   output:
@@ -66,7 +70,14 @@ rule create_K562_DC_TAP_Seq_guide_targets:
 
 rule create_WTC11_DC_TAP_Seq_guide_targets:
   input:
-    guide_design_file = "resources/process_validation_datasets/sceptre_setup/WTC11_DC_TAP_Seq/220308_WTC11_Random_Screen_sgOpti-DC.design.txt"
+    guide_design_file = "resources/process_validation_datasets/sceptre_setup/WTC11_DC_TAP_Seq/220308_WTC11_Random_Screen_sgOpti-DC.design.txt",
+    
+    ### TEMP UNTIL SCREEN DESIGN IN PIPELINE
+    old_pre_merged_guide_targets = "resources/process_validation_datasets/sceptre_setup/WTC11_DC_TAP_Seq/even_older_guide_targets.tsv",
+    chosen_genes_all_regions = "resources/process_validation_datasets/sceptre_setup/WTC11_DC_TAP_Seq/ChosenGenes.AllRegions.bed",
+    chosen_genes_distal_elements = "resources/process_validation_datasets/sceptre_setup/WTC11_DC_TAP_Seq/ChosenGenes.DistalElements.bed"
+    ### TEMP UNTIL SCREEN DESIGN IN PIPELINE
+    
   output:
     guide_targets_file = "results/process_validation_datasets/WTC11_DC_TAP_Seq/guide_targets.tsv"
   log: "results/process_validation_datasets/WTC11_DC_TAP_Seq/logs/create_WTC11_DC_TAP_Seq_guide_targets.log"

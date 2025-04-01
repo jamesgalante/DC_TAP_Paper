@@ -17,12 +17,20 @@ sink(log, type = "message")
 ### LOADING FILES =============================================================
 
 message("Loading in packages")
-suppressPackageStartupMessages(
+suppressPackageStartupMessages({
   library(tidyverse)
-)
+  library(GenomicRanges)
+})
 
 message("Loading input files")
 guide_design_file <- read_tsv(snakemake@input$guide_design_file)
+
+
+############################## TEMP UNTIL SCREEN DESIGN ADDED TO PIPELINE
+old_pre_merged_guide_targets <- read_tsv(snakemake@input$old_pre_merged_guide_targets)
+chosen_genes_all_regions <- read_tsv(snakemake@input$chosen_genes_all_regions, col_names = FALSE)
+chosen_genes_distal_elements <- read_tsv(snakemake@input$chosen_genes_distal_elements, col_names = FALSE)
+############################## TEMP UNTIL SCREEN DESIGN ADDED TO PIPELINE
 
 
 ### =========================================================
@@ -266,41 +274,146 @@ guide_targets <- data.frame(
 )
 
 
-### CHECKING TARGET SIZES ====================================================
+### ADDING 500 BP REGIONS FOR TSS =============================================
 
-# Let's visualize the target sizes
-data <- data.frame(value = unique(guide_targets$target_end) - unique(guide_targets$target_start))
+# Let's first get all the TSS 500bp regions
+all_elements <- rbind(chosen_genes_all_regions, chosen_genes_distal_elements)
+all_lab_targets <- all_elements$X4
+# [1] "TCF4_TSS" "YBX1_TSS" aren't in the all_lab_targets list - because they were from the Jones group guides
 
-p <- ggplot(data, aes(x = value)) +
-  geom_histogram(bins = 40, fill = "steelblue", color = "black") +
-  scale_y_log10() +
-  labs(title = "Histogram with Log10 Y-Axis", x = "Value", y = "Count (log10 scale)") +
-  theme_classic()
-# print(p)
+# Okay so except the three jones group guides (two jones group targets), everything has a range in these files
+# That means that for all the weird name ones (target_type == "DE" | "tss_pos" | "tss_random"), 
+# we have to take the target_chr, target_start, and target_end from the all_elements file
+final_guide_targets <- guide_targets %>% 
+  left_join(all_elements, by = c("target_name" = "X4")) %>%
+  dplyr::rename(new_target_chr = "X1", new_target_start = "X2", new_target_end = "X3") %>%
+  mutate(
+    target_chr = case_when((target_type %in% c("tss_random", "tss_pos", "DE") & !(target_name %in% c("YBX1_TSS", "TCF4_TSS"))) ~ new_target_chr, TRUE ~ target_chr),
+    target_start = case_when((target_type %in% c("tss_random", "tss_pos", "DE") & !(target_name %in% c("YBX1_TSS", "TCF4_TSS"))) ~ new_target_start, TRUE ~ target_start),
+    target_end = case_when((target_type %in% c("tss_random", "tss_pos", "DE") & !(target_name %in% c("YBX1_TSS", "TCF4_TSS"))) ~ new_target_end, TRUE ~ target_end)
+  ) %>%
+  select(-c("new_target_chr", "new_target_start", "new_target_end"))
 
-# Filter and process target sizes
-filtered_targets <- guide_targets %>%
-  filter(target_end - target_start != 301) %>%
-  mutate(size_diff = target_end - target_start) %>%
-  group_by(target_name, target_chr, target_start, target_end) %>%  # Include chr, start, and end
-  summarize(
-    num_guides = n(),
-    size_diff_values = paste(unique(size_diff), collapse = ", "),
-    min_size = min(size_diff),  # Extract the smallest value for sorting
+
+### MERGING OVERLAPPING TARGETS ===============================================
+
+# First get a list of all target names, their regions, and the target type, and remove any non targeting
+all_targets <- final_guide_targets %>% 
+  select(target_name, target_chr, target_start, target_end, target_type) %>%
+  filter(!duplicated(target_name)) %>%
+  filter(target_type %in% c("enh", "tss_pos", "tss_random", "DE"))
+
+
+# Step 1: Create GRanges from all_targets
+gr <- GRanges(
+  seqnames = all_targets$target_chr,
+  ranges = IRanges(start = all_targets$target_start, end = all_targets$target_end),
+  target_name = all_targets$target_name,
+  target_type = all_targets$target_type
+)
+
+# Step 2: Reduce overlapping regions into merged "blocks"
+reduced_gr <- reduce(gr)
+
+# Step 3: Map original targets to their reduced blocks
+hits <- findOverlaps(gr, reduced_gr)
+
+# Step 4: Build mapping of each merged block to all targets that fall into it
+merged_map <- as.data.frame(hits) %>%
+  mutate(
+    original_target_name = mcols(gr)$target_name[queryHits],
+    original_target_type = mcols(gr)$target_type[queryHits],
+    original_chr = as.character(seqnames(gr)[queryHits]),
+    original_start = start(gr)[queryHits],
+    original_end = end(gr)[queryHits],
+    merged_chr = as.character(seqnames(reduced_gr)[subjectHits]),
+    merged_start = start(reduced_gr)[subjectHits],
+    merged_end = end(reduced_gr)[subjectHits]
+  )
+
+# to_be_merged <- merged_map %>% filter(subjectHits %in% merged_map[which(duplicated(merged_map$subjectHits)), "subjectHits"])
+# It seems like everything matches up (in terms of target types matching between merged targets)
+
+# Step 5: Assign merged name/type logic
+merged_targets <- merged_map %>%
+  group_by(subjectHits) %>%
+  summarise(
+    target_chr = dplyr::first(merged_chr),
+    target_start = dplyr::first(merged_start),
+    target_end = dplyr::first(merged_end),
+    original_names = paste(unique(original_target_name), collapse = "_AND_"),
+    types = paste(unique(original_target_type), collapse = ","),
+    target_type = unique(original_target_type),
+    target_name = if (all(unique(original_target_type) == "enh")) {
+      paste0(dplyr::first(merged_chr), ":", dplyr::first(merged_start), "-", dplyr::first(merged_end))
+    } else {
+      original_names
+    },
     .groups = "drop"
   ) %>%
-  arrange(min_size) %>%
-  select(target_name, num_guides, target_chr, target_start, target_end, size_diff_values)
+  select(target_name, target_chr, target_start, target_end, target_type)
 
-# Print results
-print(filtered_targets)
+
+# Verify that the number of rows in merged_targets matches the number of unique subjectHits
+# This ensures our row_number() approach is valid
+message("Validating merged target mapping...")
+if(length(unique(merged_map$subjectHits)) != nrow(merged_targets)) {
+  warning("Number of unique subject hits doesn't match number of merged targets. Check the mapping.")
+}
+
+# Create target mapping 
+target_mapping <- merged_map %>%
+  select(original_target_name, subjectHits) %>%
+  # Join with merged_targets to get the merged target information
+  left_join(
+    merged_targets %>% mutate(subjectHits = row_number()),
+    by = "subjectHits"
+  ) %>%
+  select(original_target_name, 
+         merged_name = target_name,
+         merged_chr = target_chr,
+         merged_start = target_start,
+         merged_end = target_end,
+         merged_type = target_type)
+
+# Apply the mapping to update guide_targets_updated
+guide_targets_final <- final_guide_targets %>%
+  left_join(
+    target_mapping,
+    by = c("target_name" = "original_target_name")
+  ) %>%
+  mutate(
+    # Update target information with merged information
+    target_name = ifelse(!is.na(merged_name), merged_name, target_name),
+    target_chr = ifelse(!is.na(merged_chr), merged_chr, target_chr),
+    target_start = ifelse(!is.na(merged_start), merged_start, target_start),
+    target_end = ifelse(!is.na(merged_end), merged_end, target_end),
+    target_type = ifelse(!is.na(merged_type), merged_type, target_type)
+  ) %>%
+  # Select only the original columns
+  select(chr, start, end, name, strand, spacer,
+         target_chr, target_start, target_end,
+         target_name, target_strand, target_type)
+
+# Summarize screen stats by target_type
+design_summary <- guide_targets_final %>%
+  group_by(target_type) %>%
+  summarize(
+    n_gRNAs = n_distinct(name),
+    n_guideSets = n_distinct(target_name)
+  )
+message("Summary stats for the screen design by target type after merging: ")
+print(design_summary)
+
+
+
 
 
 ### SAVE OUTPUT ===============================================================
 
 # Save output files
 message("Saving output files")
-write_tsv(guide_targets, snakemake@output$guide_targets_file)
+write_tsv(guide_targets_final, snakemake@output$guide_targets_file)
 
 
 ### CLEAN UP ==================================================================

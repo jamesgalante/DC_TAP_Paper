@@ -16,6 +16,22 @@ rule sceptre_differential_expression:
   script:
     "../../scripts/process_validation_datasets/sceptre_power_analysis/sceptre_differential_expression.R"
     
+# Run sceptre differential expression with "mixture"
+rule sceptre_differential_expression_w_mixture:
+    input:
+      sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds"
+    output:
+      discovery_results = "results/process_validation_datasets/{sample}/differential_expression_w_mixture/results_run_discovery_analysis.rds",
+      final_sceptre_object = "results/process_validation_datasets/{sample}/differential_expression_w_mixture/final_sceptre_object.rds"
+    log: "results/process_validation_datasets/sceptre_power_analysis/logs/sceptre_differential_expression_w_mixture_{sample}.log"
+    conda:
+      "../../envs/sceptre_power_simulations.yml"
+    resources:
+      mem = "32G",
+      time = "12:00:00"
+    script:
+      "../../scripts/process_validation_datasets/sceptre_power_analysis/sceptre_differential_expression_w_mixture.R"
+
 # Run sceptre differential expression include all the negative controls tested against all elements
 rule sceptre_differential_expression_w_negative_controls:
   input:
@@ -68,7 +84,7 @@ rule create_sce:
      "../../scripts/process_validation_datasets/sceptre_power_analysis/create_sce_object.R"
     
 # Create and split the discovery pairs file
-N_BATCHES = 100
+N_BATCHES = 50
 rule split_target_response_pairs:
   input:
     gene_gRNA_group_pairs = "results/process_validation_datasets/{sample}/gene_gRNA_group_pairs.rds"

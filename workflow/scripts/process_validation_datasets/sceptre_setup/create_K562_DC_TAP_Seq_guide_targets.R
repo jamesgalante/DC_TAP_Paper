@@ -17,9 +17,10 @@ sink(log, type = "message")
 ### LOADING FILES =============================================================
 
 message("Loading in packages")
-suppressPackageStartupMessages(
+suppressPackageStartupMessages({
   library(tidyverse)
-)
+  library(GenomicRanges)
+})
 
 message("Loading input files")
 guide_design_file <- read_tsv(snakemake@input$guide_design_file)
@@ -29,6 +30,7 @@ guide_design_file <- read_tsv(snakemake@input$guide_design_file)
 ################################# TEMP UNTIL ADD SCREEN DESIGN TO PIPELINE
 positive_controls <- read_tsv(snakemake@input$positive_controls, col_names = FALSE)
 old_guide_targets <- read_tsv(snakemake@input$old_guide_targets)
+old_pre_merged_guide_targets <- read_tsv(snakemake@input$old_pre_merged_guide_targets)
 ################################# TEMP UNTIL ADD SCREEN DESIGN TO PIPELINE
 
 
@@ -169,41 +171,160 @@ guide_targets <- data.frame(
 )
 
 
-### CHECKING TARGET SIZES ====================================================
+### MERGING ANY OVERLAPPING TARGETS ===========================================
 
-# Let's visualize the target sizes
-data <- data.frame(value = unique(guide_targets$target_end) - unique(guide_targets$target_start))
+# There are some targets which are overlapping, so we should merge these targets before running differential expression
+# Let's first make sure that target_region start and end are correct for everything (specifically for TSS)
+  # Because currently I define a TSS region as something that is limited to where the guides are
+  # The TSS region should be 500 bp centered on the summit of the dnase peak representing the TSS
 
-p <- ggplot(data, aes(x = value)) +
-  geom_histogram(bins = 40, fill = "steelblue", color = "black") +
-  scale_y_log10() +
-  labs(title = "Histogram with Log10 Y-Axis", x = "Value", y = "Count (log10 scale)") +
-  theme_classic()
-# print(p)
 
-# Filter and process target sizes
-filtered_targets <- guide_targets %>%
-  filter(target_end - target_start != 301) %>%
-  mutate(size_diff = target_end - target_start) %>%
-  group_by(target_name, target_chr, target_start, target_end) %>%  # Include chr, start, and end
-  summarize(
-    num_guides = n(),
-    size_diff_values = paste(unique(size_diff), collapse = ", "),
-    min_size = min(size_diff),  # Extract the smallest value for sorting
+# In the following, we're getting the TSS target region from the old guide targets file - making sure this is 500 bp
+################################# TEMP UNTIL ADD SCREEN DESIGN TO PIPELINE
+# Extract the desired name order
+name_order <- guide_targets$name
+# Reorder the rows of old_pre_merged_guide_targets
+pre_merged_ordered <- old_pre_merged_guide_targets[match(name_order, old_pre_merged_guide_targets$name), ]
+
+# Add the target_start and target_end from the old_pre_merged_guide_targets file to the official file for the positive controls only
+pre_merged_ordered %>% filter(target_type %in% c("tss_pos", "tss_random"))
+guide_targets %>% filter(target_type %in% c("tss_pos", "tss_random"))
+
+# For these pairs, modify the guide_targets file target_start and target_end to match that of the pre merged ordered file
+# Filter down to just the positive/random TSS entries in both dataframes
+to_update <- pre_merged_ordered %>%
+  filter(target_type %in% c("tss_pos", "tss_random")) %>%
+  select(name, target_start, target_end)
+
+# Join updated values into guide_targets and overwrite target_start/end
+guide_targets_updated <- guide_targets %>%
+  left_join(to_update, by = "name", suffix = c("", ".new")) %>%
+  mutate(
+    target_start = if_else(target_type %in% c("tss_pos", "tss_random"), target_start.new, target_start),
+    target_end   = if_else(target_type %in% c("tss_pos", "tss_random"), target_end.new, target_end)
+  ) %>%
+  select(-target_start.new, -target_end.new)
+################################# TEMP UNTIL ADD SCREEN DESIGN TO PIPELINE
+
+
+# Now that we have the width of each target confirmed, we can overlap the "target_chr", "target_start", and "target_end" of each target
+# We can then get a list of all target_names that need to be merged - along with the target types
+
+# First get a list of all target names, their regions, and the target type, and remove any non targeting
+all_targets <- guide_targets_updated %>% 
+  select(target_name, target_chr, target_start, target_end, target_type) %>%
+  filter(!duplicated(target_name)) %>%
+  filter(target_type %in% c("enh", "tss_pos", "tss_random", "DE"))
+
+
+# Step 1: Create GRanges from all_targets
+gr <- GRanges(
+  seqnames = all_targets$target_chr,
+  ranges = IRanges(start = all_targets$target_start, end = all_targets$target_end),
+  target_name = all_targets$target_name,
+  target_type = all_targets$target_type
+)
+
+# Step 2: Reduce overlapping regions into merged "blocks"
+reduced_gr <- reduce(gr)
+
+# Step 3: Map original targets to their reduced blocks
+hits <- findOverlaps(gr, reduced_gr)
+
+# Step 4: Build mapping of each merged block to all targets that fall into it
+merged_map <- as.data.frame(hits) %>%
+  mutate(
+    original_target_name = mcols(gr)$target_name[queryHits],
+    original_target_type = mcols(gr)$target_type[queryHits],
+    original_chr = as.character(seqnames(gr)[queryHits]),
+    original_start = start(gr)[queryHits],
+    original_end = end(gr)[queryHits],
+    merged_chr = as.character(seqnames(reduced_gr)[subjectHits]),
+    merged_start = start(reduced_gr)[subjectHits],
+    merged_end = end(reduced_gr)[subjectHits]
+  )
+
+
+# Step 5: Assign merged name/type logic
+merged_targets <- merged_map %>%
+  group_by(subjectHits) %>%
+  summarise(
+    target_chr = dplyr::first(merged_chr),
+    target_start = dplyr::first(merged_start),
+    target_end = dplyr::first(merged_end),
+    original_names = paste(unique(original_target_name), collapse = "_AND_"),
+    types = paste(unique(original_target_type), collapse = ","),
+    target_type = if (length(unique(original_target_type)) == 1) {
+      unique(original_target_type)
+    } else {
+      "tss_random"
+    },
+    target_name = if (all(unique(original_target_type) == "enh")) {
+      paste0(dplyr::first(merged_chr), ":", dplyr::first(merged_start), "-", dplyr::first(merged_end))
+    } else {
+      original_names
+    },
     .groups = "drop"
   ) %>%
-  arrange(min_size) %>%
-  select(target_name, num_guides, target_chr, target_start, target_end, size_diff_values)
+  select(target_name, target_chr, target_start, target_end, target_type)
 
-# Print results
-print(filtered_targets)
+# Verify that the number of rows in merged_targets matches the number of unique subjectHits
+# This ensures our row_number() approach is valid
+message("Validating merged target mapping...")
+if(length(unique(merged_map$subjectHits)) != nrow(merged_targets)) {
+  warning("Number of unique subject hits doesn't match number of merged targets. Check the mapping.")
+}
+
+# Create target mapping 
+target_mapping <- merged_map %>%
+  select(original_target_name, subjectHits) %>%
+  # Join with merged_targets to get the merged target information
+  left_join(
+    merged_targets %>% mutate(subjectHits = row_number()),
+    by = "subjectHits"
+  ) %>%
+  select(original_target_name, 
+         merged_name = target_name,
+         merged_chr = target_chr,
+         merged_start = target_start,
+         merged_end = target_end,
+         merged_type = target_type)
+
+# Apply the mapping to update guide_targets_updated
+guide_targets_final <- guide_targets_updated %>%
+  left_join(
+    target_mapping,
+    by = c("target_name" = "original_target_name")
+  ) %>%
+  mutate(
+    # Update target information with merged information
+    target_name = ifelse(!is.na(merged_name), merged_name, target_name),
+    target_chr = ifelse(!is.na(merged_chr), merged_chr, target_chr),
+    target_start = ifelse(!is.na(merged_start), merged_start, target_start),
+    target_end = ifelse(!is.na(merged_end), merged_end, target_end),
+    target_type = ifelse(!is.na(merged_type), merged_type, target_type)
+  ) %>%
+  # Select only the original columns
+  select(chr, start, end, name, strand, spacer,
+         target_chr, target_start, target_end,
+         target_name, target_strand, target_type)
+
+# Summarize screen stats by target_type
+design_summary <- guide_targets_final %>%
+  group_by(target_type) %>%
+  summarize(
+    n_gRNAs = n_distinct(name),
+    n_guideSets = n_distinct(target_name)
+  )
+message("Summary stats for the screen design by target type after merging: ")
+print(design_summary)
 
 
 ### SAVE OUTPUT ===============================================================
 
 # Save output files
 message("Saving output files")
-write_tsv(guide_targets, snakemake@output$guide_targets_file)
+write_tsv(guide_targets_final, snakemake@output$guide_targets_file)
 
 
 ### CLEAN UP ==================================================================

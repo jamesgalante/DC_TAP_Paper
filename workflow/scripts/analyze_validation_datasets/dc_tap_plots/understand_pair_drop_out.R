@@ -5,7 +5,7 @@
 # Saving image for debugging
 save.image(paste0("RDA_objects/understand_pair_drop_out.rda"))
 message("Saved Image")
-# stop("Manually Stopped Program after Saving Image")
+stop("Manually Stopped Program after Saving Image")
 
 # Open log file to collect messages, warnings, and errors
 log_filename <- snakemake@log[[1]]
@@ -27,7 +27,7 @@ discovery_pairs <- lapply(snakemake@input$discovery_pairs, readRDS)
 diffex_output <- lapply(snakemake@input$diffex_output, readRDS)
 power_analysis_output <- lapply(snakemake@input$power_analysis_output, read_tsv)
 create_encode_dataset_output <- lapply(snakemake@input$create_encode_dataset_output, read_tsv)
-liftover_output <-  lapply(snakemake@input$liftover_output, readRDS)
+liftover_output <-  lapply(snakemake@input$liftover_output, read_tsv)
 filter_crispr_dataset_output <- lapply(snakemake@input$filter_crispr_dataset_output, read_tsv)
 
 # Read in the files that are combined
@@ -39,74 +39,78 @@ create_ensemble_epbenchmarking_output <- read_tsv(snakemake@input$create_ensembl
 
 # Make sure to understand type of pair that dropped out
 
-dim(discovery_pairs)
-dim(diffex_output)
-dim(power_analysis_output)
-dim(create_encode_dataset_output)
-dim(liftover_output)
-dim(filter_crispr_dataset_output)
-dim(create_ensemble_encode_output)
-dim(create_ensemble_epbenchmarking_output)
+dim(discovery_pairs[[1]])
+dim(diffex_output[[1]])
+dim(power_analysis_output[[1]])
+dim(create_encode_dataset_output[[1]])
+dim(liftover_output[[1]])
+dim(filter_crispr_dataset_output[[1]])
+dim(create_ensemble_encode_output %>% filter(Dataset == "K562_DC_TAP_Seq"))
+dim(create_ensemble_epbenchmarking_output %>% filter(Dataset == "K562_DC_TAP_Seq"))
+
+# > dim(discovery_pairs[[1]])
+# [1] 7556    2
+# > dim(diffex_output[[1]])
+# [1] 7556    8
+# > dim(power_analysis_output[[1]]) 
+# [1] 7516   24
+# > dim(create_encode_dataset_output[[1]])
+# [1] 7516   31
+# > dim(liftover_output[[1]])
+# [1] 7498   31
+# > dim(filter_crispr_dataset_output[[1]])
+# [1] 7498   31
+# > dim(create_ensemble_encode_output %>% filter(Dataset == "K562_DC_TAP_Seq"))
+# [1] 7498   30
+# > dim(create_ensemble_epbenchmarking_output %>% filter(Dataset == "K562_DC_TAP_Seq"))
+# [1] 7498   21
+
+dim(discovery_pairs[[2]])
+dim(diffex_output[[2]])
+dim(power_analysis_output[[2]])
+dim(create_encode_dataset_output[[2]])
+dim(liftover_output[[2]])
+dim(filter_crispr_dataset_output[[2]])
+dim(create_ensemble_encode_output %>% filter(Dataset == "WTC11_DC_TAP_Seq"))
+dim(create_ensemble_epbenchmarking_output %>% filter(Dataset == "WTC11_DC_TAP_Seq"))
+
+# > dim(discovery_pairs[[2]])
+# [1] 6843    2
+# > dim(diffex_output[[2]])
+# [1] 6843    8
+# > dim(power_analysis_output[[2]])
+# [1] 6581   24
+# > dim(create_encode_dataset_output[[2]])
+# [1] 6581   31
+# > dim(liftover_output[[2]])
+# [1] 6581   31
+# > dim(filter_crispr_dataset_output[[2]])
+# [1] 6581   31
+# > dim(create_ensemble_encode_output %>% filter(Dataset == "WTC11_DC_TAP_Seq"))
+# [1] 6581   30
+# > dim(create_ensemble_epbenchmarking_output %>% filter(Dataset == "WTC11_DC_TAP_Seq"))
+# [1] 6581   21
 
 
+############# QUANTIFY EXACTLY HOW MANY PAIRS OF EACH TYPE DROP OUT AT EACH STEP - K562
 
-# > dim(discovery_pairs)
-# [1] 7964    2
-# > dim(diffex_output)
-# [1] 7964    8
-# > dim(power_analysis_output)
-# [1] 7919   24
-# > dim(create_encode_dataset_output)
-# [1] 7919   31
-# > dim(liftover_output)
-# [1] 7901   31
-# > dim(filter_crispr_dataset_output)
-# [1] 7901   31
-# > dim(create_ensemble_encode_output)
-# [1] 7525   30
-# > dim(create_ensemble_epbenchmarking_output)
-# [1] 7525   21
+# 40 drop out after power analysis - 
+missing_pairs <- anti_join(
+  diffex_output[[1]] %>% dplyr::select(grna_target, response_id), 
+  power_analysis_output[[1]] %>% dplyr::select(perturbation, gene),
+  by = c("grna_target" = "perturbation", "response_id" = "gene")
+)
+diffex_output[[1]] %>% filter(grna_target %in% missing_pairs$grna_target, response_id %in% missing_pairs$response_id)
+# None of these pairs pass QC by sceptre - in fact these are the only pairs that don't pass qc
+
+# After liftover, 18 drop out - all pairs with `chr8:145537346-145537700` liftOver error message: "Partially deleted in new: Sequence insufficiently intersects one chain"
 
 
-############# QUANTIFY EXACTLY HOW MANY PAIRS OF EACH TYPE DROP OUT AT EACH STEP
+############# QUANTIFY EXACTLY HOW MANY PAIRS OF EACH TYPE DROP OUT AT EACH STEP - WTC11
 
+# For WTC11, pairs only dropped out after sceptre, so these are from not passing Sceptre QCs
+sum(!diffex_output[[2]]$pass_qc) ==  nrow(diffex_output[[2]]) - nrow(power_analysis_output[[2]]) 
 
-### Why do 45 pairs drop out in power analysis?
-# ???
-# Num tss v enh
-num_tss_before <- sum(power_analysis_output$target_type == "TSSCtrl")
-num_tss_after <- create_encode_dataset_output %>% filter(str_detect(ValidConnection, "TSS target")) %>% nrow()
-print(num_tss_before - num_tss_after)
-# None of these are TSS
-
-
-### Why do 18 pairs drop out in liftover_output
-# ???
-# Num tss v enh
-num_tss_before <- create_encode_dataset_output %>% filter(str_detect(ValidConnection, "TSS target")) %>% nrow()
-num_tss_after <- liftover_output %>% filter(str_detect(ValidConnection, "TSS target")) %>% nrow()
-print(num_tss_before - num_tss_after)
-# None of these are TSS
-
-
-### Why do 282 pairs drop out in filter_crispr_dataset_output* `filter_crispr_dataset.R`  !!!!! line 45 distance filter (*fixed*)
-# distance filter is a hard cutoff at 1000bp so none of the TSS Ctrls are going to go through if they're targeting their own gene
-# How many of these were TSS targeting versus enh
-num_tss_before <- liftover_output %>% filter(str_detect(ValidConnection, "TSS target")) %>% nrow()
-num_tss_after <- filter_crispr_dataset_output %>% filter(str_detect(ValidConnection, "TSS target")) %>% nrow()
-print(num_tss_before - num_tss_after)
-# So it seems like 150/282 pairs that dropped out at this step were TSS targets
-
-
-### Why do 355 pairs drop out in create_ensemble_encode_output* `create_ensemble_dataset.R` !!!!! line 115 reduce gets rid of everything
-# This is targets with overlapping regions that are paired with the same gene
-# WHY are there overlapping targets -> did these exist before liftOver??
-# How many tss duplicates are removed in the create_ensemble_encode_output step
-num_tss_before <- filter_crispr_dataset_output %>% filter(str_detect(ValidConnection, "TSS target")) %>% nrow()
-num_tss_after <- create_ensemble_encode_output %>% filter(str_detect(ValidConnection, "TSS target")) %>% nrow()
-print(num_tss_before - num_tss_after)
-# Apparently 149 / 355 pairs removed were genes tested against a TSS target
-# Might have to check what's happening here -> like if fixing the filter crispr dataset thing doesn't help then it could be that enhancers overlapped with tss targets and they had more power or significance or something
 
 
 

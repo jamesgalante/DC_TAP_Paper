@@ -20,19 +20,14 @@ include: "rules/analyze_validation_datasets/running_qcs_for_dc_tap_plots.smk"
 
 # Perform all analyses to output benchmarked datasets
 rule all:
-  input: "results/analyze_validation_datasets/dc_tap_plots/summary_stats.txt"
+  input: 
+    # "results/analyze_validation_datasets/dc_tap_plots/summary_stats.txt",
+    "results/analyze_validation_datasets/dc_tap_plots/check_negative_control_results/k562_volcano.pdf",
+    "results/analyze_validation_datasets/duplicate_pairs_analysis/comparing_all_duplicate_pairs.pdf",
+    "results/analyze_validation_datasets/dc_tap_plots/compare_replicates/k562_plot.pdf",
+    "results/analyze_validation_datasets/dc_tap_plots/distance_by_effect_size_plots/k562_distance_by_es.pdf",
+    "results/analyze_validation_datasets/dc_tap_plots/qPCR_qc/comparison_of_all_by_type.pdf"
   
-# rule run_all_qcs:
-#   input:
-#     "results/analyze_validation_datasets/dc_tap_plots/summary_stats.txt",
-#     "results/analyze_validation_dataset/dc_tap_plots/drop_out_stats.txt",
-#     "results/analyze_validation_datasets/dc_tap_plots/check_negative_control_results/k562_volcano.pdf"
-#     
-# rule create_all_plots:
-#   input:
-#     "results/analyze_validation_datasets/dc_tap_plots/distance_by_effect_size_plots/k562_distance_by_es.pdf",
-#     "results/analyze_validation_datasets/dc_tap_plots/distance_by_effect_size_plots/wtc11_distance_by_es.pdf"
-
 
 
 

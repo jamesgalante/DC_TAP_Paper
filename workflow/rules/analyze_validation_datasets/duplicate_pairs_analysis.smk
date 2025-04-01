@@ -97,7 +97,7 @@ rule find_duplicate_pairs:
     gasperini_sceptre_results_w_symbol = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_analysis/gasperini_sceptre_results_w_symbol.rds",
     perturb_sce = "resources/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/perturb_sce.rds",
     dc_tap_guide_targets = "results/process_validation_datasets/K562_DC_TAP_Seq/guide_targets.tsv",
-    singleton_dctap = "/oak/stanford/groups/engreitz/Users/jgalante/DC_TAP_Paper/results/process_validation_datasets/K562_DC_TAP_Seq/singleton_differential_expression/results_run_discovery_analysis.rds",
+    singleton_dctap = "results/process_validation_datasets/K562_DC_TAP_Seq/singleton_differential_expression/results_run_discovery_analysis.rds",
     singleton_gasperini = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_analysis/per_guide_diffex/results_run_discovery_analysis.rds"
   output:
     gasperini_sceptre_v_mast_comparison = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_v_mast_comparison.pdf",

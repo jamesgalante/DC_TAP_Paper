@@ -31,7 +31,7 @@ rule understand_pair_drop_out:
     create_ensemble_encode_output = "results/benchmark_validation_datasets/create_encode_output/ENCODE/ENCODE_Combined_Validation_Datasets_GRCh38.tsv.gz",
     create_ensemble_epbenchmarking_output = "results/benchmark_validation_datasets/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_Combined_Validation_Datasets_GRCh38.tsv.gz"
   output:
-    drop_out_stats = "results/analyze_validation_dataset/dc_tap_plots/drop_out_stats.txt"
+    drop_out_stats = "results/analyze_validation_datasets/dc_tap_plots/drop_out_stats.txt"
   log: "results/analyze_validation_datasets/dc_tap_plots/logs/understand_pair_drop_out.log"
   conda:
     "../../envs/analyze_crispr_screen.yml"
@@ -77,7 +77,7 @@ rule compare_k562_effect_sizes_to_qPCR:
   params:
   log: "results/analyze_validation_datasets/dc_tap_plots/logs/compare_k562_effect_sizes_to_qPCR.log"
   conda:
-    "../../envs/analyze_crispr_screen.yml" # NEED TO REMAKE CONDA ENVIRONMENT FOR THIS RULE
+    "../../envs/all_packages.yml"
   resources:
     mem = "8G",
     time = "1:00:00"
@@ -86,6 +86,43 @@ rule compare_k562_effect_sizes_to_qPCR:
     
   
 rule compare_replicates:
+  input:
+    dge = "results/process_validation_datasets/{sample}/raw_counts/dge.rds",
+    perturb_status = "results/process_validation_datasets/{sample}/raw_counts/perturb_status.rds",
+    gene_gRNA_group_pairs = "results/process_validation_datasets/{sample}/gene_gRNA_group_pairs.rds",
+    gRNA_groups_table = "results/process_validation_datasets/{sample}/gRNA_groups_table.rds",
+    metadata = "results/process_validation_datasets/{sample}/metadata.rds",
+  output:
+    discovery_results1 = "results/analyze_validation_datasets/dc_tap_plots/compare_replicates/{sample}_1/results_run_discovery_analysis.rds",
+    final_sceptre_object1 = "results/analyze_validation_datasets/dc_tap_plots/compare_replicates/{sample}_1/final_sceptre_object.rds",
+    discovery_results2 = "results/analyze_validation_datasets/dc_tap_plots/compare_replicates/{sample}_2/results_run_discovery_analysis.rds",
+    final_sceptre_object2 = "results/analyze_validation_datasets/dc_tap_plots/compare_replicates/{sample}_2/final_sceptre_object.rds"
+  log: "results/analyze_validation_datasets/dc_tap_plots/logs/compare_replicates_{sample}.log"
+  conda:
+    "../../envs/all_packages.yml"
+  resources:
+    mem = "8G",
+    time = "1:00:00"
+  script:
+    "../../scripts/analyze_validation_datasets/dc_tap_plots/compare_replicates.R"
+  
+rule make_replicates_plots:
+  input:
+    discovery_results1 = expand("results/analyze_validation_datasets/dc_tap_plots/compare_replicates/{sample}_1/results_run_discovery_analysis.rds", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"]),
+    discovery_results2 = expand("results/analyze_validation_datasets/dc_tap_plots/compare_replicates/{sample}_2/results_run_discovery_analysis.rds", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
+  output:
+    k562_plot = "results/analyze_validation_datasets/dc_tap_plots/compare_replicates/k562_plot.pdf",
+    wtc11_plot = "results/analyze_validation_datasets/dc_tap_plots/compare_replicates/wtc11_plot.pdf",
+    k562_neg_plot = "results/analyze_validation_datasets/dc_tap_plots/compare_replicates/k562_neg_plot.pdf",
+    wtc11_neg_plot = "results/analyze_validation_datasets/dc_tap_plots/compare_replicates/wtc11_neg_plot.pdf"
+  log: "results/analyze_validation_datasets/dc_tap_plots/logs/make_replicates_plots.log"
+  conda:
+    "../../envs/all_packages.yml"
+  resources:
+    mem = "8G",
+    time = "1:00:00"
+  script:
+    "../../scripts/analyze_validation_datasets/dc_tap_plots/make_replicates_plots.R"  
   
   
 

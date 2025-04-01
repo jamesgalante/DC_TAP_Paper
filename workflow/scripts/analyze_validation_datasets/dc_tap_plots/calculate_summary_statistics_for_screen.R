@@ -5,7 +5,7 @@
 # Saving image for debugging
 save.image(paste0("RDA_objects/calculate_summary_statistics_for_screen.rda"))
 message("Saved Image")
-stop("Manually Stopped Program after Saving Image")
+# stop("Manually Stopped Program after Saving Image")
 
 # Open log file to collect messages, warnings, and errors
 log_filename <- snakemake@log[[1]]
@@ -23,8 +23,8 @@ suppressPackageStartupMessages({
 })
 
 message("Loading input files")
-combined_validation_unfiltered <- read_tsv(snakemake@input$combined_validation_unfiltered)
-combined_training_unfiltered <- read_tsv(snakemake@input$combined_training_unfiltered)
+combined_validation <- read_tsv(snakemake@input$combined_validation)
+combined_training <- read_tsv(snakemake@input$combined_training)
 
 # Load in the negative control genes from the config file
 k562_negative_control_genes <- as.vector(snakemake@params$k562_negative_control_genes)
@@ -38,8 +38,8 @@ wtc11_guide_targets <- read_tsv(snakemake@input$guide_targets[[2]])
 ### ARE ANY NEGATIVE CONTROL PAIRS REPRESENTED ================================
 
 # Separate the wtc11 and k562 pairs
-wtc11 <- combined_validation_unfiltered %>% filter(category == "WTC11 DC TAP Seq")
-k562 <- combined_validation_unfiltered %>% filter(category == "K562 DC TAP Seq")
+wtc11 <- combined_validation %>% filter(category == "WTC11 DC TAP Seq")
+k562 <- combined_validation %>% filter(category == "K562 DC TAP Seq")
 
 # Check how many (if any) negative control genes are represented in the pairs 
 # nrow(wtc11 %>% filter(ValidConnection == TRUE) %>% filter(Regulated == TRUE) %>% filter(measuredGeneSymbol %in% wtc11_negative_control_genes))
@@ -47,19 +47,48 @@ k562 <- combined_validation_unfiltered %>% filter(category == "K562 DC TAP Seq")
 
 # Both of these have 0 rows meaning that there were no enhancer-gene pairs (Regulated == TRUE & ValidConnection == TRUE) discovered in the screen between the targets and negative control genes
 
+# There are however multiple negative control genes paired up with targets that were tested
+# > nrow(k562 %>% filter(measuredGeneSymbol %in% k562_negative_control_genes))
+# [1] 106
+# > nrow(wtc11 %>% filter(measuredGeneSymbol %in% wtc11_negative_control_genes))
+# [1] 93
+
+# These are the genes for each that are represented
+# > k562 %>% filter(measuredGeneSymbol %in% k562_negative_control_genes) %>% pull(measuredGeneSymbol) %>% unique()
+# [1] "SNAPIN" "ECI1"   "DNM2"   "FARSA" 
+# > wtc11 %>% filter(measuredGeneSymbol %in% wtc11_negative_control_genes) %>% pull(measuredGeneSymbol) %>% unique()
+# [1] "LARGE2" "RPAIN"  "ESCO1"  "YIPF2"  "EEF1D" 
+
+# And here is how often they are represented
+# > k562 %>% filter(measuredGeneSymbol %in% k562_negative_control_genes) %>% pull(measuredGeneSymbol) %>% table()
+# DNM2   ECI1  FARSA SNAPIN 
+# 36     31      6     33 
+# > wtc11 %>% filter(measuredGeneSymbol %in% wtc11_negative_control_genes) %>% pull(measuredGeneSymbol) %>% table()
+# EEF1D  ESCO1 LARGE2  RPAIN  YIPF2 
+# 42      1      1     18     31 
+
+# K562: DNM2, ECI1 are on the outskirts of a 2Mb region. FARSA is next to two TSS Ctrls. SNAPIN is within a 2Mb region
+# WTC11: EEF1D is on the outskirts of a 2Mb region. ESCO1 is paired with a TSS Ctrl. LARGE2 is paired with a TSS Ctrl. 
+        # RPAIN is paired with a bunch of enhancers on chr17. YIPF2 is on the outskirts of a 2Mb region.
+
+# We'll keep these pairs in because they were tested - and because the loci tested are still random
+
 
 ### PROMOTER CASES ============================================================
 
 # Are there any instances where ValidConnection contains "TSS targeting guide(s)" but not "overlaps potential promoter"?
-combined_validation_unfiltered %>% 
+combined_validation %>% 
   filter(str_detect(ValidConnection, "TSS targeting guide") & !str_detect(ValidConnection, "overlaps potential promoter"))
 
-# There are three cases where we have a TSS targeting guide that doesn't overlap a potential promoter - all are K562
-  # chr2 55048528 55048911 ERLEC1|chr2:55275664-55276047:. 0.02978613 chr2 53786680 53787180 ERLEC1 FALSE
-  # chr2 55137588 55138076 ERLEC1|chr2:55364724-55365212:. 0.04190005 chr2 53786680 53787180 ERLEC1 FALSE
-  # chr2 55137588 55138076 RTN4|chr2:55364724-55365212:. 0.01525616 chr2 55050348 55050848 RTN4 FALSE
+# There are four cases where we have a TSS targeting guide that doesn't overlap a potential promoter - all are K562
+# > filter(str_detect(ValidConnection, "TSS targeting guide") & !str_detect(ValidConnection, "overlaps potential promoter"))
+# chrom chromStart chromEnd name         EffectSize chrTSS startTSS endTSS measuredGeneSymbol Significant pValueAdjusted
+# chr2    55048416 55048916 ERLEC1|chr2…     0.0298 chr2   53786680 5.38e7 ERLEC1             FALSE                0.930
+# chr2    55048416 55048916 RTN4|chr2:5…    -0.0508 chr2   55050348 5.51e7 RTN4               FALSE                0.614
+# chr2    55137581 55138081 ERLEC1|chr2…     0.0419 chr2   53786680 5.38e7 ERLEC1             FALSE                0.881
+# chr2    55137581 55138081 RTN4|chr2:5…     0.0153 chr2   55050348 5.51e7 RTN4               FALSE                0.946
 
-# These only involve two purported TSS targets (don't be distracted by ERLEC1 being represented twice - this doesn't have to do with the target being a TSS control)
+# These only involve two purported TSS targets 
   # chr2 55048528 55048911 (hg38)
   # chr2 55137588 55138076 (hg38)
 
@@ -84,8 +113,8 @@ guide_targets_all <- bind_rows(
                                NA_character_)
   )
 
-# Parse combined_validation_unfiltered: extract coordinate information
-combined_parsed <- combined_validation_unfiltered %>%
+# Parse combined_validation: extract coordinate information
+combined_parsed <- combined_validation %>%
   # Split 'name' at the "|" and discard the gene part (we already have measuredGeneSymbol)
   separate(name, into = c(NA, "hg19_target_coords"), sep = "\\|", remove = FALSE) %>%
   # Remove trailing ":." from the coordinates and extract components
@@ -110,14 +139,14 @@ combined_joined <- combined_parsed %>%
 
 message("~~~~~ 'DE-G' pairs (w/ ENCODE filtering, so filter for ValidConnection == TRUE)")
 message("\tfor all pairs after encode filtering, what are the stats of sig and not")
-cat1_significant_pairs <- combined_validation_unfiltered %>%
+cat1_significant_pairs <- combined_validation %>%
   filter(ValidConnection == TRUE, Significant == TRUE) %>%
   dplyr::rename(Downregulated = Regulated) %>%
   select(category, Downregulated) %>%
   table()
 print(cat1_significant_pairs)
 
-cat1_nonsignificant_pairs <- combined_validation_unfiltered %>%
+cat1_nonsignificant_pairs <- combined_validation %>%
   filter(Significant == FALSE) %>%
   filter(str_detect(ValidConnection, "TRUE")) %>%
   mutate("Underpowered" = str_detect(ValidConnection, "< 80% power at 15% effect size")) %>%
@@ -130,7 +159,7 @@ print(cat1_nonsignificant_pairs)
 
 message('~~~~~ "DP-G" pairs (distal promoters effects on another nearby gene)')
 message("\tfor all targets that overlap a promoter in the ENCODE pipeline AND which aren't paired with the gene of the promoter they're overlapping, what are the stats of sig and not")
-pairs_overlapping_nonself_promoter <- combined_validation_unfiltered %>%
+pairs_overlapping_nonself_promoter <- combined_validation %>%
   filter(str_detect(ValidConnection, "overlaps potential promoter")) %>%
   filter(!str_detect(ValidConnection, "distance <1000")) %>% # Filter out any pairs that are <1kb in distance (this will remove a lot of the TSS pos controls)
   rowwise() %>%
@@ -187,7 +216,7 @@ print(cat2_tss_nonsignificant_pairs)
 
 message("~~~~~ X# Promoter effects on target genes")
 message("\tfor all targets that overlap a promoter in the ENCODE pipeline AND ARE paired with the gene of the promoter they're overlapping, what are the stats of sig and not")
-pairs_overlapping_self_promoter <- combined_validation_unfiltered %>%
+pairs_overlapping_self_promoter <- combined_validation %>%
   filter(str_detect(ValidConnection, "overlaps potential promoter")) %>%
   filter(!str_detect(ValidConnection, "distance <1000")) %>% # Filter out any pairs that are <1kb in distance (this will remove a lot of the TSS pos controls)
   rowwise() %>%
@@ -332,7 +361,7 @@ combined_grid <- plot_grid(
 
 # Save output files
 message("Saving output files")
-saveRDS(combined_joined, snakemake@output$unfiltered_validation_with_guide_targets)
+# saveRDS(combined_joined, snakemake@output$unfiltered_validation_with_guide_targets)
 
 # Save a text file with all of these summary statistics
 # Save a bunch of plots which display all of these numbers
