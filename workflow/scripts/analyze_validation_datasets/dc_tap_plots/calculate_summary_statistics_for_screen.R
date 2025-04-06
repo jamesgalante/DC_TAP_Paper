@@ -26,92 +26,21 @@ message("Loading input files")
 combined_validation <- read_tsv(snakemake@input$combined_validation)
 combined_training <- read_tsv(snakemake@input$combined_training)
 
-# Load in the negative control genes from the config file
-k562_negative_control_genes <- as.vector(snakemake@params$k562_negative_control_genes)
-wtc11_negative_control_genes <- as.vector(snakemake@params$wtc11_negative_control_genes)
-
 # Load in the guide_targets files
 k562_guide_targets <- read_tsv(snakemake@input$guide_targets[[1]])
 wtc11_guide_targets <- read_tsv(snakemake@input$guide_targets[[2]])
 
 
-### ARE ANY NEGATIVE CONTROL PAIRS REPRESENTED ================================
+### ADD TSS CONTROL INFORMATION ===============================================
 
-# Separate the wtc11 and k562 pairs
-wtc11 <- combined_validation %>% filter(category == "WTC11 DC TAP Seq")
-k562 <- combined_validation %>% filter(category == "K562 DC TAP Seq")
-
-# Check how many (if any) negative control genes are represented in the pairs 
-# nrow(wtc11 %>% filter(ValidConnection == TRUE) %>% filter(Regulated == TRUE) %>% filter(measuredGeneSymbol %in% wtc11_negative_control_genes))
-# nrow(k562 %>% filter(ValidConnection == TRUE) %>% filter(Regulated == TRUE) %>% filter(measuredGeneSymbol %in% k562_negative_control_genes))
-
-# Both of these have 0 rows meaning that there were no enhancer-gene pairs (Regulated == TRUE & ValidConnection == TRUE) discovered in the screen between the targets and negative control genes
-
-# There are however multiple negative control genes paired up with targets that were tested
-# > nrow(k562 %>% filter(measuredGeneSymbol %in% k562_negative_control_genes))
-# [1] 106
-# > nrow(wtc11 %>% filter(measuredGeneSymbol %in% wtc11_negative_control_genes))
-# [1] 93
-
-# These are the genes for each that are represented
-# > k562 %>% filter(measuredGeneSymbol %in% k562_negative_control_genes) %>% pull(measuredGeneSymbol) %>% unique()
-# [1] "SNAPIN" "ECI1"   "DNM2"   "FARSA" 
-# > wtc11 %>% filter(measuredGeneSymbol %in% wtc11_negative_control_genes) %>% pull(measuredGeneSymbol) %>% unique()
-# [1] "LARGE2" "RPAIN"  "ESCO1"  "YIPF2"  "EEF1D" 
-
-# And here is how often they are represented
-# > k562 %>% filter(measuredGeneSymbol %in% k562_negative_control_genes) %>% pull(measuredGeneSymbol) %>% table()
-# DNM2   ECI1  FARSA SNAPIN 
-# 36     31      6     33 
-# > wtc11 %>% filter(measuredGeneSymbol %in% wtc11_negative_control_genes) %>% pull(measuredGeneSymbol) %>% table()
-# EEF1D  ESCO1 LARGE2  RPAIN  YIPF2 
-# 42      1      1     18     31 
-
-# K562: DNM2, ECI1 are on the outskirts of a 2Mb region. FARSA is next to two TSS Ctrls. SNAPIN is within a 2Mb region
-# WTC11: EEF1D is on the outskirts of a 2Mb region. ESCO1 is paired with a TSS Ctrl. LARGE2 is paired with a TSS Ctrl. 
-        # RPAIN is paired with a bunch of enhancers on chr17. YIPF2 is on the outskirts of a 2Mb region.
-
-# We'll keep these pairs in because they were tested - and because the loci tested are still random
-
-
-### PROMOTER CASES ============================================================
-
-# Are there any instances where ValidConnection contains "TSS targeting guide(s)" but not "overlaps potential promoter"?
-combined_validation %>% 
-  filter(str_detect(ValidConnection, "TSS targeting guide") & !str_detect(ValidConnection, "overlaps potential promoter"))
-
-# There are four cases where we have a TSS targeting guide that doesn't overlap a potential promoter - all are K562
-# > filter(str_detect(ValidConnection, "TSS targeting guide") & !str_detect(ValidConnection, "overlaps potential promoter"))
-# chrom chromStart chromEnd name         EffectSize chrTSS startTSS endTSS measuredGeneSymbol Significant pValueAdjusted
-# chr2    55048416 55048916 ERLEC1|chr2…     0.0298 chr2   53786680 5.38e7 ERLEC1             FALSE                0.930
-# chr2    55048416 55048916 RTN4|chr2:5…    -0.0508 chr2   55050348 5.51e7 RTN4               FALSE                0.614
-# chr2    55137581 55138081 ERLEC1|chr2…     0.0419 chr2   53786680 5.38e7 ERLEC1             FALSE                0.881
-# chr2    55137581 55138081 RTN4|chr2:5…     0.0153 chr2   55050348 5.51e7 RTN4               FALSE                0.946
-
-# These only involve two purported TSS targets 
-  # chr2 55048528 55048911 (hg38)
-  # chr2 55137588 55138076 (hg38)
-
-# Both of these instances are with RTN4 - this locus is a bit strange given how many annotated TSSs there are. There also only seems to be one active TSS
-# I think, because these TSSs are so close together, that I will keep these as being labelled as TSSs, but it's good to keep this in mind when looking at results
-
-
-### CREATE COMBINED TABLE W/ TSS NAMES ========================================
-
+# Combine the guide_targets and the combined_validation by their coordinates (hg19) for each target
+# Combine the guide targets
 guide_targets_all <- bind_rows(
   k562_guide_targets,
   wtc11_guide_targets
 ) %>%
   group_by(target_name) %>%
-  dplyr::slice(1) %>%
-  ungroup() %>%
-  mutate(
-    # For rows where target_type is "TSS" (or the target_name contains "TSS"),
-    # compute TSS_control_gene; otherwise, leave it as NA.
-    TSS_control_gene = if_else(target_type == "TSS" | str_detect(target_name, "TSS"),
-                               str_replace(target_name, "^(.*?)(?:_(?:\\d+))?_TSS(?:_(?:\\d+))?$", "\\1"),
-                               NA_character_)
-  )
+  dplyr::slice(1)
 
 # Parse combined_validation: extract coordinate information
 combined_parsed <- combined_validation %>%
@@ -128,233 +57,274 @@ combined_parsed <- combined_validation %>%
 # Join the parsed combined data with the combined TSS controls by matching coordinates.
 combined_joined <- combined_parsed %>%
   left_join(
-    guide_targets_all %>% select(target_name, target_type, target_chr, target_start, target_end, TSS_control_gene),
+    guide_targets_all %>% select(target_name, target_type, target_chr, target_start, target_end),
     by = c("hg19_target_chr" = "target_chr",
            "hg19_target_start" = "target_start",
            "hg19_target_end" = "target_end")
   )
 
-
-### CALCULATE STATISTICS FOR CATEGORY 1 =======================================
-
-message("~~~~~ 'DE-G' pairs (w/ ENCODE filtering, so filter for ValidConnection == TRUE)")
-message("\tfor all pairs after encode filtering, what are the stats of sig and not")
-cat1_significant_pairs <- combined_validation %>%
-  filter(ValidConnection == TRUE, Significant == TRUE) %>%
-  dplyr::rename(Downregulated = Regulated) %>%
-  select(category, Downregulated) %>%
-  table()
-print(cat1_significant_pairs)
-
-cat1_nonsignificant_pairs <- combined_validation %>%
-  filter(Significant == FALSE) %>%
-  filter(str_detect(ValidConnection, "TRUE")) %>%
-  mutate("Underpowered" = str_detect(ValidConnection, "< 80% power at 15% effect size")) %>%
-  select(category, Underpowered) %>%
-  table()
-print(cat1_nonsignificant_pairs)
+# For all TSS Controls, get the target gene name - separate by "_", scrap anything that's just a number, "TSS", "AND", or has "chr" in it
+combined_joined <- combined_joined %>%
+  mutate(TSS_control_gene = case_when(
+    target_type %in% c("tss_pos", "tss_random") ~ 
+      sapply(strsplit(target_name, "_"), function(x) 
+        paste(unique(x[!x %in% c("TSS", "AND") & !grepl("^\\d+$", x) & !grepl("^chr", x)]), 
+              collapse = "_")),
+    TRUE ~ NA_character_
+  ))
 
 
-### CALCULATE STATISTICS FOR CATEGORY 2a ======================================
+### FIGURING OUT DISTAL ELEMENT POSITIVE CONTROL TARGET GENES =================
 
-message('~~~~~ "DP-G" pairs (distal promoters effects on another nearby gene)')
-message("\tfor all targets that overlap a promoter in the ENCODE pipeline AND which aren't paired with the gene of the promoter they're overlapping, what are the stats of sig and not")
-pairs_overlapping_nonself_promoter <- combined_validation %>%
-  filter(str_detect(ValidConnection, "overlaps potential promoter")) %>%
-  filter(!str_detect(ValidConnection, "distance <1000")) %>% # Filter out any pairs that are <1kb in distance (this will remove a lot of the TSS pos controls)
-  rowwise() %>%
-  mutate(promoters_overlapping_target = list({
-    parts <- str_split(ValidConnection, ";")[[1]] %>% str_trim()
-    pp <- parts[str_detect(parts, "overlaps potential promoter")]
-    genes <- str_remove(pp, "overlaps potential promoter: ") %>% str_split("\\|") %>% unlist() %>% str_trim()
-    genes
-    })) %>%
-  ungroup() %>%
-  filter(!(measuredGeneSymbol %in% promoters_overlapping_target))
+# There are a few distal element positive controls. We want to figure out what those controls intended targets were
+positive_control_distal_elements_k562 <- combined_joined %>% 
+  filter(target_type == "DE", category == "K562 DC TAP Seq") # Get all K562 distal elements because these aren't named by what gene they target
+# control_genes <- k562_gene_table %>% filter(type == "control") %>% pull(gene) %>% unique()
+control_genes <- c("TMEM98", "RASSF7", "RAE1", "PLP2", "PIM2", "GATA1", "UBR5", "LYL1", 
+                   "DNASE2", "PPIF", "CEP104", "CTSD", "NFE2", "PHF20L1", "LRRC47", 
+                   "RRP8", "TIMM10B", "RBM38", "LRRCC1", "CD164", "MYC", "PIM1", 
+                   "FAM83A", "FADS1", "ALAS2", "EPB41", "TMEM41B", "JUNB", "UROS", 
+                   "SVIP", "HBD", "CCDC26", "SMIM1")
+t <- positive_control_distal_elements_k562 %>% filter(measuredGeneSymbol %in% control_genes)
+# Can see how many of these target gene pairs are unique? - as in which targets are only paired with one gene
+t %>% pull(target_name) %>% table() # Most have more than one gene they're paired with
 
-cat2_prom_significant_pairs <- pairs_overlapping_nonself_promoter %>%
-  filter(Significant == TRUE) %>%
-  dplyr::rename(Downregulated = Regulated) %>%
-  select(category, Downregulated) %>%
-  table()
-print(cat2_prom_significant_pairs)
+# There are 38 unique K562 targets that are DEs
+# 2 dropped out at power analysis because Diffex was NA (they didn't pass sceptre QC) `setdiff(all_de_controls, combined_joined %>% filter(target_type == "DE") %>% pull(target_name) %>% unique())`
+# So now for each of these 40 targets, i have to figure out what the original intended gene symbol was to be the control
 
-cat2_prom_nonsignificant_pairs <- pairs_overlapping_nonself_promoter %>%
-  filter(Significant == FALSE) %>%
-  mutate("Underpowered" = str_detect(ValidConnection, "< 80% power at 15% effect size")) %>%
-  select(category, Underpowered) %>%
-  table()
-print(cat2_prom_nonsignificant_pairs)
+# 17 DEs are only paired with on of the "control" genes
+easy_des <- names((t %>% pull(target_name) %>% table())[t %>% pull(target_name) %>% table() == 1])
+# So for these 17 DEs, that control gene must be the gene that it was originally designed against
 
+# For the others, I guess i can go through each of these groups of targets
+# chr1:3691430-3691731
+# This guy is paired with three TSSs: SMIM, LRRC47, CEP104
+# However it's closest to SMIM
 
-### CALCULATE STATISTICS FOR CATEGORY 2b ======================================
+# chr11:5297067-5297368    chr11:5301767-5302068    chr11:5305872-5306173    chr11:5309369-5309670
+# These guys are all paired with 3 TSSs: HBD, TIMM10B, RRP8
+# However they're all closer to HBD
 
-# We want to now just filter out all instances where the measuredGeneSymbol and the TSS_control_gene are the same
-message("\tfor all targets that are a TSS control in the guide design AND which aren't paired with the gene of the TSS target, what are the stats of sig and not")
-combined_joined_tss_only <- combined_joined %>%
-  filter(!str_detect(ValidConnection, "distance <1000")) %>% # Filter out any pairs that are <1kb in distance (this will remove a lot of the TSS pos controls)
-  filter(!is.na(TSS_control_gene)) %>%
-  filter(measuredGeneSymbol != TSS_control_gene)
+# chr19:12895376-12895677  chr19:12900763-12901064  
+# These two guys are both paired with: JUNB, DNASE, LYL1
+# However they're closest to JUNB
 
-# Now we calculate the summary statistics on this table : it's all the TSSs targeted and their gene pairs (not including the gene of the TSS)
-cat2_tss_significant_pairs <- combined_joined_tss_only %>%
-  filter(Significant == TRUE) %>%
-  dplyr::rename(Downregulated = Regulated) %>%
-  select(category, Downregulated) %>%
-  table()
-print(cat2_tss_significant_pairs)
+# chr19:13215352-13215653
+# This guys is paired with: JUNB, DNASE, LYL1
+# However it's closest to LYL1
 
-cat2_tss_nonsignificant_pairs <- combined_joined_tss_only %>%
-  filter(Significant == FALSE) %>%
-  mutate(Underpowered = str_detect(ValidConnection, "< 80% power at 15% effect size")) %>%
-  select(category, Underpowered) %>%
-  table()
-print(cat2_tss_nonsignificant_pairs)
+# chr20:55990343-55990644
+# This guy is paired with RAE1, RBM38
+# However it's closest to RBM38
 
+# chr8:128911048-128911349 chr8:128972548-128972849 
+# These two guys are paired with MYC, CCDC26
+# Seems like these are MYC though
 
-### CALCULATE STATISTICS FOR CATEGORY 3a ======================================
+# chr8:130594299-130594600 chr8:130701786-130702087 chr8:130705120-130705421
+# These guys are paired with MYC, CCDC26
+# Seems like these are CCDC26 though
 
-message("~~~~~ X# Promoter effects on target genes")
-message("\tfor all targets that overlap a promoter in the ENCODE pipeline AND ARE paired with the gene of the promoter they're overlapping, what are the stats of sig and not")
-pairs_overlapping_self_promoter <- combined_validation %>%
-  filter(str_detect(ValidConnection, "overlaps potential promoter")) %>%
-  filter(!str_detect(ValidConnection, "distance <1000")) %>% # Filter out any pairs that are <1kb in distance (this will remove a lot of the TSS pos controls)
-  rowwise() %>%
-  mutate(promoters_overlapping_target = list({
-    parts <- str_split(ValidConnection, ";")[[1]] %>% str_trim()
-    pp <- parts[str_detect(parts, "overlaps potential promoter")]
-    genes <- str_remove(pp, "overlaps potential promoter: ") %>% str_split("\\|") %>% unlist() %>% str_trim()
-    genes
-  })) %>%
-  ungroup() %>%
-  filter(measuredGeneSymbol %in% promoters_overlapping_target)
+# chrX:48641339-48641640   chrX:48658921-48659222   
+# These guys are paired with GATA1, PIM2, PLP2
+# Closest to GATA1
 
-cat3_prom_significant_pairs <- pairs_overlapping_self_promoter %>%
-  filter(Significant == TRUE) %>%
-  dplyr::rename(Downregulated = Regulated) %>%
-  select(category, Downregulated) %>%
-  table()
-print(cat3_prom_significant_pairs)
+# chrX:48797830-48798131   chrX:48799012-48799313   
+# These guys are paired with GATA1, PIM2, PLP2
+# Closest to PIM2
 
-cat3_prom_nonsignificant_pairs <- pairs_overlapping_self_promoter %>%
-  filter(Significant == FALSE) %>%
-  mutate("Underpowered" = str_detect(ValidConnection, "< 80% power at 15% effect size")) %>%
-  select(category, Underpowered) %>%
-  table()
-print(cat3_prom_nonsignificant_pairs)
+# chrX:49005070-49005371   chrX:49022767-49023068   chrX:49023638-49023939
+# These guys are paired with GATA1, PIM2, PLP2
+# Closest to PLP2
 
+# These pairs make the most logical sense, but I would have to confirm with the screen design - for now though, we can use this
+# Let's make a map from all DE targets to the genes that they're supposed to be positive controls against
 
-### CALCULATE STATISTICS FOR CATEGORY 3b ======================================
+# We already have the easy des, let's manually do the others
+easy_map_df <- t %>% 
+  filter(target_name %in% easy_des) %>% 
+  select(target_name, measuredGeneSymbol) %>%
+  dplyr::rename(de_assigned_gene = measuredGeneSymbol)
 
-message("\tfor all targets that are a TSS control in the guide design AND ARE paired with the gene of the promoter they're overlapping, what are the stats of sig and not")
-combined_joined_tss_only <- combined_joined %>%
-  filter(!is.na(TSS_control_gene)) %>%
-  filter(measuredGeneSymbol == TSS_control_gene)
-
-cat3_tss_significant_pairs <- combined_joined_tss_only %>%
-  filter(Significant == TRUE) %>%
-  dplyr::rename(Downregulated = Regulated) %>%
-  select(category, Downregulated) %>%
-  table()
-print(cat3_tss_significant_pairs)
-
-cat3_tss_nonsignificant_pairs <- combined_joined_tss_only %>%
-  filter(Significant == FALSE) %>%
-  mutate(Underpowered = str_detect(ValidConnection, "< 80% power at 15% effect size")) %>%
-  select(category, Underpowered) %>%
-  table()
-print(cat3_tss_nonsignificant_pairs)
-
-
-### CALCULATE STATISTICS FOR CATEGORY 4 =======================================
-
-message("~~~~~ X# Positive control distal enhancer-gene pairs")
-
-# Use combined_joined (this has the target_type) for each target
-# Have to figure out the target_type for K562 - guide design file doesn't have it -> probably have to get elsewhere or something
-# Would like to have labelled - positive control (TSS), positive control (DE), Locus gene TSS (TSS), Enh -> ask Judhajeet
-
-
-### CREATE GRAPHS & TABLES ====================================================
-
-# Function to create a bar plot for significant pairs
-# Assumes the table has two dimensions: category and a binary variable (e.g. "Downregulated")
-plot_sig <- function(table_obj, subtitle = "") {
-  # Convert the table to a data frame and rename columns
-  df <- as.data.frame(table_obj)
-  # Rename columns: assuming dimnames are in order: category and Downregulated
-  colnames(df) <- c("Category", "Group", "Count")
+# Now add the manual mappings based on your analysis
+manual_mappings <- list(
+  # chr1:3691430-3691731 is closest to SMIM1
+  "chr1:3691430-3691731" = "SMIM1",
   
-  # Set factor order for Group (adjust levels if needed)
-  df$Group <- factor(df$Group, levels = c("FALSE", "TRUE"))
+  # These are all closer to HBD
+  "chr11:5297067-5297368" = "HBD",
+  "chr11:5301767-5302068" = "HBD",
+  "chr11:5305872-5306173" = "HBD",
+  "chr11:5309369-5309670" = "HBD",
   
-  p <- ggplot(df, aes(x = Category, y = Count, fill = Group)) +
-    geom_bar(stat = "identity", position = position_dodge()) +
-    labs(title = "Significant Pairs",
-         subtitle = subtitle,
-         x = "Category",
-         y = "Count",
-         fill = "Downregulated") +
-    theme_classic()
+  # These are closest to JUNB
+  "chr19:12895376-12895677" = "JUNB",
+  "chr19:12900763-12901064" = "JUNB",
   
-  return(p)
-}
-
-# Function to create a bar plot for nonsignificant pairs
-# Assumes the table has two dimensions: category and a binary variable (e.g. "Underpowered")
-plot_non <- function(table_obj, subtitle = "") {
-  # Convert the table to a data frame and rename columns
-  df <- as.data.frame(table_obj)
-  # Rename columns: assuming dimnames are in order: category and Underpowered
-  colnames(df) <- c("Category", "Group", "Count")
+  # This one is closest to LYL1
+  "chr19:13215352-13215653" = "LYL1",
   
-  # Set factor order for Group (adjust levels if needed)
-  df$Group <- factor(df$Group, levels = c("FALSE", "TRUE"))
+  # This one is closest to RBM38
+  "chr20:55990343-55990644" = "RBM38",
   
-  p <- ggplot(df, aes(x = Category, y = Count, fill = Group)) +
-    geom_bar(stat = "identity", position = position_dodge()) +
-    labs(title = "Nonsignificant Pairs",
-         subtitle = subtitle,
-         x = "Category",
-         y = "Count",
-         fill = "Underpowered") +
-    theme_classic()
+  # These are MYC
+  "chr8:128911048-128911349" = "MYC", 
+  "chr8:128972548-128972849" = "MYC",
   
-  return(p)
-}
-
-
-# category 1
-sig_cat1 <- plot_sig(cat1_significant_pairs, subtitle = "cat1")
-non_cat1 <- plot_non(cat1_nonsignificant_pairs, subtitle = "cat1")
-
-# category 2 prom
-sig_cat2a <- plot_sig(cat1_significant_pairs, subtitle = "cat2a")
-non_cat2a <- plot_non(cat1_nonsignificant_pairs, subtitle = "cat2a")
-# category 2 tss
-sig_cat2b <- plot_sig(cat1_significant_pairs, subtitle = "cat2b")
-non_cat2b <- plot_non(cat1_nonsignificant_pairs, subtitle = "cat2b")
-
-# category 3 prom
-sig_cat3a <- plot_sig(cat1_significant_pairs, subtitle = "cat3a")
-non_cat3a <- plot_non(cat1_nonsignificant_pairs, subtitle = "cat3a")
-# category 3 tss
-sig_cat3b <- plot_sig(cat1_significant_pairs, subtitle = "cat3b")
-non_cat3b <- plot_non(cat1_nonsignificant_pairs, subtitle = "cat3b")
-
-combined_grid <- plot_grid(
-  sig_cat1, non_cat1,
-  sig_cat2a, non_cat2a,
-  sig_cat2b, non_cat2b,
-  sig_cat3a, non_cat3a,
-  sig_cat3b, non_cat3b,
-  ncol = 2,
-  align = "v",
-  labels = "AUTO"
+  # These are CCDC26
+  "chr8:130594299-130594600" = "CCDC26",
+  "chr8:130701786-130702087" = "CCDC26",
+  "chr8:130705120-130705421" = "CCDC26",
+  
+  # These are closest to GATA1
+  "chrX:48641339-48641640" = "GATA1",
+  "chrX:48658921-48659222" = "GATA1",
+  
+  # These are closest to PIM2
+  "chrX:48797830-48798131" = "PIM2",
+  "chrX:48799012-48799313" = "PIM2",
+  
+  # These are closest to PLP2
+  "chrX:49005070-49005371" = "PLP2",
+  "chrX:49022767-49023068" = "PLP2",
+  "chrX:49023638-49023939" = "PLP2"
 )
 
-# Display the grid
-# print(combined_grid)
+# Combine the easy mappings with the manual mappings
+manual_mappings_df <- tibble(
+  target_name = names(manual_mappings),
+  de_assigned_gene = unlist(manual_mappings)
+)
+
+# Combine both dataframes
+de_gene_map_df <- bind_rows(easy_map_df, manual_mappings_df)
+
+# Let's now just add the intended positive control gene for each distal element target
+combined_joined <- combined_joined %>%
+  left_join(de_gene_map_df, by = "target_name") %>%
+  mutate(de_assigned_gene = case_when(
+    target_type == "DE" ~ de_assigned_gene,
+    TRUE ~ NA
+  )) %>%
+  # Now add the WTC11 DE targets
+  mutate(de_assigned_gene = case_when(
+    category == "WTC11 DC TAP Seq" & target_type == "DE" ~ sapply(strsplit(target_name, "_"), function(x) 
+      paste(unique(x[x != "DE" & !grepl("^\\d+$", x)]), 
+            collapse = "_")),
+    TRUE ~ de_assigned_gene
+  ))
+
+
+### CREATING THE SUMMARY STATS TABLE
+
+# E-G table:  Include the following columns:
+# Category: `DistalElement-Gene`
+  # Filtered for ENCODE stuff 
+  # Remove "TSS targeting guide(s)", "distance <1000", "overlaps target gene exon", "overlaps potential promoter", "overlaps target gene intron"
+  # Don't have to filter out "< 80% power at 15% effect size" - because we want stats on this
+# Category: `DistalPromoter-Gene`
+  # All promoter-overlapping or TSS targets when paired with a gene not self
+# Category: `SelfPromoter`
+  # All promoter-overlapping or TSS targets when paired with themselves
+# Category: `Positive Control DistalElement-Gene`
+  # All "DE"s when paired with the gene that they're supposed to be tested against
+# Category: `Random DistalElement-Gene`
+  # From all `DistalElement-Gene` pairs, remove the non-random pairs (For the random set, we can define that as every pair where targets are from the random 2Mb loci (except that one instance of NANOG DE pos control being within a 2Mb region in wtc11))
+# I don't think this should exist
+# Category: `Random Validation DistalElement-Gene`
+  # Pairs that should be in the validation dataset
+
+
+# Escape parentheses for regex matching
+ValidConnection_Flags <- c(
+  "TSS targeting guide\\(s\\)", 
+  "distance <1000", 
+  "overlaps target gene exon", 
+  "overlaps potential promoter", 
+  "overlaps target gene intron"
+)
+
+# Category: `DistalElement-Gene`
+combined_joined_w_categories <- combined_joined %>%
+  mutate(DistalElement_Gene = case_when(
+    Significant == TRUE & !str_detect(ValidConnection, str_c(ValidConnection_Flags, collapse = "|")) ~ TRUE,
+    Significant == FALSE & !str_detect(ValidConnection, str_c(ValidConnection_Flags, collapse = "|")) ~ TRUE,
+    TRUE ~ FALSE
+  ))                 
+
+# There are two cases that we want to account for
+  # When there's "overlaps potential promoter"
+    # what promoter is it overlapping -> is that promoter the same as the measuredGeneSymbol
+  # "TSS targeting guide(s)"
+    # In this case is the measuredGeneSymbol == TSS_control_gene
+
+combined_joined_w_categories <- combined_joined_w_categories %>%
+  rowwise() %>%  # Process each row individually
+  mutate(PromoterGeneList = if (str_detect(ValidConnection, "overlaps potential promoter:")) {
+    # Extract the substring, split on "|" and trim each element,
+    # then wrap in a list so the column remains a list-column.
+    list(trimws(unlist(str_split(
+      str_extract(ValidConnection, "(?<=overlaps potential promoter:)[^;]+"),
+      "\\|"
+    ))))
+  } else {
+    list(NA_character_)
+  }) %>%
+  ungroup()
+
+# For each target that is overlapping a promoter or has TSS targeting guide(s), let's define a DistalPromoter_Gene column for when that target is tested against a gene that it isn't overlapping
+# We prioritize the results returned by "overlaps potential promoter" for deciding if it's selfPromoter or DistalPromoter_Gene
+combined_joined_w_categories <- combined_joined_w_categories %>%
+  # Create a helper column that picks the promoter type
+  mutate(
+    promoter_type = case_when(
+      str_detect(ValidConnection, "overlaps potential promoter:") ~ "overlap",
+      str_detect(ValidConnection, "TSS targeting") ~ "tss",
+      TRUE ~ "none"
+    ),
+    # When both conditions are present, you could decide to use "overlap"
+    promoter_type = if_else(
+      str_detect(ValidConnection, "overlaps potential promoter:") & str_detect(ValidConnection, "TSS targeting"),
+      "overlap",
+      promoter_type
+    )
+  ) %>%
+  mutate(
+    selfPromoter = case_when(
+      promoter_type == "overlap" ~ map2_lgl(measuredGeneSymbol, PromoterGeneList, ~ .x %in% .y),
+      promoter_type == "tss" ~ (measuredGeneSymbol == TSS_control_gene),
+      TRUE ~ FALSE
+    ),
+    DistalPromoter_Gene = case_when(
+      promoter_type == "overlap" ~ map2_lgl(measuredGeneSymbol, PromoterGeneList, ~ !(.x %in% .y)),
+      promoter_type == "tss" ~ (measuredGeneSymbol != TSS_control_gene),
+      TRUE ~ FALSE
+    )
+  )
+
+# Category: `Positive Control DistalElement-Gene`
+combined_joined_w_categories <- combined_joined_w_categories %>%
+  mutate(Positive_Control_DistalElement_Gene = case_when(
+    target_type == "DE" & de_assigned_gene == measuredGeneSymbol ~ TRUE,
+    TRUE ~ FALSE
+  ))
+
+# Category: `Random DistalElement-Gene`
+# Need the locus for each target
+# For the random set, we can define that as every pair where targets are from the random 2Mb loci (except that one instance of NANOG DE pos control being within a 2Mb region in wtc11)
+# This should just be all "enh" and all "tss_random" right? - yes
+combined_joined_w_categories <- combined_joined_w_categories %>%
+  mutate(Random_DistalElement_Gene = case_when(
+    target_type %in% c("tss_random", "enh") ~ TRUE,
+    TRUE ~ FALSE
+  ))
+
+# Category: `Random Validation DistalElement-Gene`
+# Random element pairs that are also DistalElement pairs
+combined_joined_w_categories <- combined_joined_w_categories %>%
+  mutate(Random_Validation_DistalElement_Gene = ifelse(Random_DistalElement_Gene == TRUE & DistalElement_Gene == TRUE, TRUE, FALSE))
+
 
 
 ### SAVE OUTPUT ===============================================================
