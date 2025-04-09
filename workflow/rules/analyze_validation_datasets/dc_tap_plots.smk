@@ -35,6 +35,19 @@ rule power_simulation_plots:
   script:
     "../../scripts/analyze_validation_datasets/dc_tap_plots/power_simulation_plots.R"
     
+rule effect_size_plots:
+  input:
+    experiment_summary_table = "results/analyze_validation_datasets/dc_tap_plots/summarized_categories.tsv"
+  output:
+    effect_size_boxplot = "results/analyze_validation_datasets/dc_tap_plots/effect_size_plots/effect_size_boxplot.pdf"
+  log: "results/analyze_validation_datasets/dc_tap_plots/logs/effect_size_plots.log"
+  conda:
+    "../../envs/analyze_crispr_screen.yml"
+  resources:
+    mem = "8G",
+    time = "1:00:00"
+  script:
+    "../../scripts/analyze_validation_datasets/dc_tap_plots/effect_size_plots.R" 
     
 # Create a rule to calculate the effect size distribution of screens
 # basically showing that the median effect size is like 15% or something or wahtever it is (maybe this changes by TPM)

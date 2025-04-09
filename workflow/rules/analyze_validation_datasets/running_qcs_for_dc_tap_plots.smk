@@ -2,7 +2,7 @@
 # Rule to get numbers for the paper
 rule calculate_summary_statistics_for_screen:
   input:
-    combined_validation = "results/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/combined_validation_expt_pred_merged_annot.txt",
+    combined_validation = "results/benchmark_validation_datasets/crispr_benchmarking/expt_pred_merged_annot/validation_expt_pred_merged_annot.txt.gz",
     guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"]),
     encode_training_dataset = "resources/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/training_expt_pred_merged_annot.txt.gz",
     create_ensemble_encode_input = expand("results/benchmark_validation_datasets/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_{sample}_0.13gStd_Sceptre_perCRE_0.8pwrAt15effect_GRCh38.tsv.gz", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])

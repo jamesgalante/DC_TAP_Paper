@@ -24,7 +24,7 @@ suppressPackageStartupMessages({
 })
 
 message("Loading input files")
-combined_validation <- read_tsv(snakemake@input$combined_validation)
+combined_validation <- read_tsv(snakemake@input$combined_validation) %>% filter(pred_id == "ENCODE_rE2G")
 
 # Load in the guide_targets files
 k562_guide_targets <- read_tsv(snakemake@input$guide_targets[[1]])
@@ -84,7 +84,7 @@ combined_joined <- combined_joined %>%
 
 # There are a few distal element positive controls. We want to figure out what those controls' intended targets were
 # Get all positive control distal elements from K562 because these aren't labelled with their tested control gene
-positive_control_distal_elements_k562 <- combined_joined %>% filter(target_type == "DE", category == "K562 DC TAP Seq")
+positive_control_distal_elements_k562 <- combined_joined %>% filter(target_type == "DE", Reference == "K562_DC_TAP_Seq")
 
 # Import list of all control genes used in K562 screen
 control_genes <- c("TMEM98", "RASSF7", "RAE1", "PLP2", "PIM2", "GATA1", "UBR5", "LYL1", "DNASE2", "PPIF", "CEP104", "CTSD", "NFE2", "PHF20L1", "LRRC47", "RRP8", 
@@ -164,7 +164,7 @@ combined_joined <- combined_joined %>%
   )) %>%
   # Now add the WTC11 DE targets - which have the intended positive control gene indicated in the target_name
   mutate(de_assigned_gene = case_when(
-    category == "WTC11 DC TAP Seq" & target_type == "DE" ~ sapply(strsplit(target_name, "_"), function(x) 
+    Reference == "WTC11_DC_TAP_Seq" & target_type == "DE" ~ sapply(strsplit(target_name, "_"), function(x) 
       paste(unique(x[x != "DE" & !grepl("^\\d+$", x)]), 
             collapse = "_")),
     TRUE ~ de_assigned_gene
@@ -365,10 +365,49 @@ cat("\nSummary table for WTC11:\n")
 print(summary_WTC11)
 
 
+### REMOVE UNDERPOWERED PAIRS =================================================
+
+# We wanted to get the statistics on how many pairs are underpowered, but we don't want this in the final table
+# Modify the categories to remove underpowered nonsignificant pairs
+combined_joined_w_categories_fixed <- combined_joined_w_categories %>%
+  mutate(
+    DistalElement_Gene = case_when(
+      Significant == FALSE & 
+        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
+      TRUE ~ DistalElement_Gene
+    ),
+    selfPromoter = case_when(
+      Significant == FALSE & 
+        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
+      TRUE ~ selfPromoter
+    ),
+    DistalPromoter_Gene = case_when(
+      Significant == FALSE & 
+        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
+      TRUE ~ DistalPromoter_Gene
+    ),
+    Positive_Control_DistalElement_Gene = case_when(
+      Significant == FALSE & 
+        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
+      TRUE ~ Positive_Control_DistalElement_Gene
+    ),
+    Random_DistalElement_Gene = case_when(
+      Significant == FALSE & 
+        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
+      TRUE ~ Random_DistalElement_Gene
+    ),
+    Random_Validation_DistalElement_Gene = case_when(
+      Significant == FALSE & 
+        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
+      TRUE ~ Random_Validation_DistalElement_Gene
+    )
+  )
+
+
 ### CREATE SUMMARIZED COMBINED JOINED W CATEGORIES ============================
 
 # Add distances by joining with the create_ensemble_encode_input table and adding distances
-summarized_categories <- combined_joined_w_categories %>% 
+summarized_categories <- combined_joined_w_categories_fixed %>% 
   left_join(
     create_ensemble_encode_input %>% 
       select(chrom, chromStart, chromEnd, measuredGeneSymbol, Reference, distToTSS), 
@@ -382,7 +421,7 @@ summarized_categories <- combined_joined_w_categories %>%
 
 # Save output files
 message("Saving output files")
-write_tsv(combined_joined_w_categories, snakemake@output$combined_joined_w_categories)
+write_tsv(combined_joined_w_categories_fixed, snakemake@output$combined_joined_w_categories)
 write_tsv(summarized_categories, snakemake@output$summarized_categories)
 write_tsv(summary_K562, snakemake@output$summary_K562)
 write_tsv(summary_WTC11, snakemake@output$summary_WTC11)

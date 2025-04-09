@@ -13,7 +13,7 @@ include: "rules/benchmark_validation_datasets/create_encode_output.smk"
 include: "rules/benchmark_validation_datasets/crispr_benchmarking.smk"
 
 # Include all rules for analyzing validation datasets
-include: "rules/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results.smk"
+# include: "rules/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results.smk" # Removed because Maya running categorization of elements
 include: "rules/analyze_validation_datasets/duplicate_pairs_analysis.smk"
 include: "rules/analyze_validation_datasets/dc_tap_plots.smk"
 include: "rules/analyze_validation_datasets/running_qcs_for_dc_tap_plots.smk"
