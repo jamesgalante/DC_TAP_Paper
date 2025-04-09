@@ -3,9 +3,12 @@
 rule calculate_summary_statistics_for_screen:
   input:
     combined_validation = "results/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/combined_validation_expt_pred_merged_annot.txt",
-    guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
+    guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"]),
+    encode_training_dataset = "resources/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/training_expt_pred_merged_annot.txt.gz",
+    create_ensemble_encode_input = expand("results/benchmark_validation_datasets/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_{sample}_0.13gStd_Sceptre_perCRE_0.8pwrAt15effect_GRCh38.tsv.gz", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
   output:
     combined_joined_w_categories = "results/analyze_validation_datasets/dc_tap_plots/combined_joined_w_categories.tsv",
+    summarized_categories = "results/analyze_validation_datasets/dc_tap_plots/summarized_categories.tsv",
     summary_K562 = "results/analyze_validation_datasets/dc_tap_plots/summary_K562.tsv",
     summary_WTC11 = "results/analyze_validation_datasets/dc_tap_plots/summary_WTC11.tsv"
   log: "results/analyze_validation_datasets/dc_tap_plots/logs/calculate_summary_statistics_for_screen.log"

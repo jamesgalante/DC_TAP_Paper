@@ -20,6 +20,7 @@ message("Loading in packages")
 suppressPackageStartupMessages({
   library(tidyverse)
   library(cowplot)
+  library(GenomicRanges)
 })
 
 message("Loading input files")
@@ -28,6 +29,12 @@ combined_validation <- read_tsv(snakemake@input$combined_validation)
 # Load in the guide_targets files
 k562_guide_targets <- read_tsv(snakemake@input$guide_targets[[1]])
 wtc11_guide_targets <- read_tsv(snakemake@input$guide_targets[[2]])
+
+# Load in the training dataset
+encode_training_dataset <- read_tsv(snakemake@input$encode_training_dataset)
+
+# Load in the create_ensemble_encode input files
+create_ensemble_encode_input <- bind_rows(lapply(snakemake@input$create_ensemble_encode_input, read_tsv))
 
 
 ### ADD TSS CONTROL INFORMATION ===============================================
@@ -246,12 +253,41 @@ combined_joined_w_categories <- combined_joined_w_categories %>%
 # For the random set, we can define that as every pair where targets are from the random 2Mb loci (except that one instance of NANOG DE pos control being within a 2Mb region in wtc11)
 # This should just be all "enh"
 combined_joined_w_categories <- combined_joined_w_categories %>%
-  mutate(Random_DistalElement_Gene = ifelse(target_type == "enh", TRUE, FALSE))
+  mutate(Random_DistalElement_Gene = ifelse(target_type == "enh" & DistalElement_Gene == TRUE, TRUE, FALSE))
 
 # Category: `Random Validation DistalElement-Gene`
 # Random element pairs that are also DistalElement pairs
+# Create GRanges objects for overlap detection (without merging)
+random_gr <- combined_joined_w_categories %>%
+  mutate(random_pair_id = row_number()) %>%
+  filter(ExperimentCellType == "K562", Random_DistalElement_Gene == TRUE) %>%
+  { GRanges(
+    seqnames = paste0(.$chrom, ":", .$measuredGeneSymbol),
+    ranges = IRanges(start = .$chromStart, end = .$chromEnd),
+    random_pair_id = .$random_pair_id
+  ) }
+
+training_gr <- encode_training_dataset %>%
+  filter(pred_id == "ENCODE_rE2G") %>%
+  { GRanges(
+    seqnames = paste0(.$chrom, ":", .$measuredGeneSymbol),
+    ranges = IRanges(start = .$chromStart, end = .$chromEnd),
+  ) }
+
+# Find overlaps (since the seqnames include the gene name, overlapping hits should match on the gene as well)
+ovl_hits <- findOverlaps(random_gr, training_gr)
+
+# Get the list of random_pair_ids with matching overlaps
+matching_overlap_ids <- random_gr$random_pair_id[queryHits(ovl_hits)]
+
+# Mark as TRUE for those NOT overlapping training (i.e. valid for Random Validation)
 combined_joined_w_categories <- combined_joined_w_categories %>%
-  mutate(Random_Validation_DistalElement_Gene = ifelse(Random_DistalElement_Gene == TRUE & DistalElement_Gene == TRUE, TRUE, FALSE))
+  mutate(random_pair_id = row_number()) %>%
+  mutate(Random_Validation_DistalElement_Gene = case_when(
+    ExperimentCellType == "K562" ~ random_pair_id %in% setdiff(random_gr$random_pair_id, matching_overlap_ids),
+    ExperimentCellType == "WTC11" ~ Random_DistalElement_Gene
+  )) %>%
+  select(-random_pair_id)
 
 
 ### CALCULATE SUMMARY STATISTICS ==============================================
@@ -329,11 +365,25 @@ cat("\nSummary table for WTC11:\n")
 print(summary_WTC11)
 
 
+### CREATE SUMMARIZED COMBINED JOINED W CATEGORIES ============================
+
+# Add distances by joining with the create_ensemble_encode_input table and adding distances
+summarized_categories <- combined_joined_w_categories %>% 
+  left_join(
+    create_ensemble_encode_input %>% 
+      select(chrom, chromStart, chromEnd, measuredGeneSymbol, Reference, distToTSS), 
+    by = c("chrom", "chromStart", "chromEnd", "measuredGeneSymbol", "Reference")) %>%
+  select(chrom, chromStart, chromEnd, measuredGeneSymbol, pValueAdjusted, EffectSize, Significant, 
+         ExperimentCellType, target_type, distToTSS, DistalElement_Gene, selfPromoter, DistalPromoter_Gene, 
+         Positive_Control_DistalElement_Gene, Random_DistalElement_Gene, Random_Validation_DistalElement_Gene)
+
+
 ### SAVE OUTPUT ===============================================================
 
 # Save output files
 message("Saving output files")
 write_tsv(combined_joined_w_categories, snakemake@output$combined_joined_w_categories)
+write_tsv(summarized_categories, snakemake@output$summarized_categories)
 write_tsv(summary_K562, snakemake@output$summary_K562)
 write_tsv(summary_WTC11, snakemake@output$summary_WTC11)
 
