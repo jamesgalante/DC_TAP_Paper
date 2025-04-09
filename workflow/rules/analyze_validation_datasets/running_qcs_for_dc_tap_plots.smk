@@ -3,13 +3,11 @@
 rule calculate_summary_statistics_for_screen:
   input:
     combined_validation = "results/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/combined_validation_expt_pred_merged_annot.txt",
-    combined_training = "results/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/combined_training_expt_pred_merged_annot.txt",
     guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
   output:
-    summary_stats = "results/analyze_validation_datasets/dc_tap_plots/summary_stats.txt"
-  params:
-    k562_negative_control_genes = config["process_validation_datasets"]["sceptre_setup"]["negative_controls"]["K562_DC_TAP_Seq"],
-    wtc11_negative_control_genes = config["process_validation_datasets"]["sceptre_setup"]["negative_controls"]["WTC11_DC_TAP_Seq"]
+    combined_joined_w_categories = "results/analyze_validation_datasets/dc_tap_plots/combined_joined_w_categories.tsv",
+    summary_K562 = "results/analyze_validation_datasets/dc_tap_plots/summary_K562.tsv",
+    summary_WTC11 = "results/analyze_validation_datasets/dc_tap_plots/summary_WTC11.tsv"
   log: "results/analyze_validation_datasets/dc_tap_plots/logs/calculate_summary_statistics_for_screen.log"
   conda:
     "../../envs/analyze_crispr_screen.yml"
@@ -124,7 +122,81 @@ rule make_replicates_plots:
   script:
     "../../scripts/analyze_validation_datasets/dc_tap_plots/make_replicates_plots.R"  
   
+rule igv_file_creation:
+  input:
+    combined_joined_w_categories = "results/analyze_validation_datasets/dc_tap_plots/combined_joined_w_categories.tsv",
+    k562_guide_targets = "results/process_validation_datasets/K562_DC_TAP_Seq/guide_targets.tsv",
+    wtc11_guide_targets = "results/process_validation_datasets/WTC11_DC_TAP_Seq/guide_targets.tsv",
+    hg19ToHg38_chain_file = "resources/benchmark_validation_datasets/create_encode_output/hg19ToHg38.over.chain",
+    annot = "resources/process_validation_datasets/sceptre_setup/genome_annotation_files/gencode.v32.annotation.gtf.gz",
+    k562_gene_table = "resources/analyze_validation_datasets/igv_file_creation/k562_gene_table.txt",
+    wtc11_gene_table = "resources/analyze_validation_datasets/igv_file_creation/wtc11_gene_table.txt"
+  output:
+    k562_guides = "results/analyze_validation_datasets/dc_tap_plots/igv_files/k562_guide_targets_hg38.bed",
+    k562_targets = "results/analyze_validation_datasets/dc_tap_plots/igv_files/k562_target_regions_hg38.bed",
+    k562_arcs = "results/analyze_validation_datasets/dc_tap_plots/igv_files/k562_guide_target_arcs_hg38.bedpe",
+    wtc11_guides = "results/analyze_validation_datasets/dc_tap_plots/igv_files/wtc11_guide_targets_hg38.bed",
+    wtc11_targets = "results/analyze_validation_datasets/dc_tap_plots/igv_files/wtc11_target_regions_hg38.bed",
+    wtc11_arcs = "results/analyze_validation_datasets/dc_tap_plots/igv_files/wtc11_guide_target_arcs_hg38.bedpe",
+    guide_color_map = "results/analyze_validation_datasets/dc_tap_plots/igv_files/guide_color_map.tsv",
+    target_color_map = "results/analyze_validation_datasets/dc_tap_plots/igv_files/target_color_map.tsv",
+    k562_TAP_seq_genes = "results/analyze_validation_datasets/dc_tap_plots/igv_files/k562_TAP_seq_genes.bed",
+    wtc11_TAP_seq_genes = "results/analyze_validation_datasets/dc_tap_plots/igv_files/wtc11_TAP_seq_genes.bed",
+    k562_signif_arcs = "results/analyze_validation_datasets/dc_tap_plots/igv_files/k562_signif_arcs.bedpe",
+    wtc11_signif_arcs = "results/analyze_validation_datasets/dc_tap_plots/igv_files/wtc11_signif_arcs.bedpe"
+  log: "results/analyze_validation_datasets/dc_tap_plots/logs/igv_file_creation.log"
+  conda:
+    "../../envs/all_packages.yml"
+  resources:
+    mem = "8G",
+    time = "1:00:00"
+  script:
+    "../../scripts/analyze_validation_datasets/dc_tap_plots/igv_file_creation.R"  
+    
+# Lines to copy all file to mitra
+# Copy K562 files
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/k562_guide_targets_hg38.bed \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_K562/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/k562_target_regions_hg38.bed \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_K562/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/k562_guide_target_arcs_hg38.bedpe \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_K562/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/k562_TAP_seq_genes.bed \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_K562/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/k562_signif_arcs.bedpe \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_K562/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/guide_color_map.tsv \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_K562/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/target_color_map.tsv \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_K562/
+
+# Copy WTC11 files
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/wtc11_guide_targets_hg38.bed \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_WTC11/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/wtc11_target_regions_hg38.bed \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_WTC11/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/wtc11_guide_target_arcs_hg38.bedpe \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_WTC11/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/wtc11_TAP_seq_genes.bed \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_WTC11/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/wtc11_signif_arcs.bedpe \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_WTC11/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/guide_color_map.tsv \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_WTC11/
+# cp results/analyze_validation_datasets/dc_tap_plots/igv_files/target_color_map.tsv \
+#    /oak/stanford/groups/engreitz/public/RayJagoda2024/DC-TAPseq/new_WTC11/
+
   
-
-
+# Mitra links:
+# https://mitra.stanford.edu/engreitz/oak/public/RayJagoda2024/DC-TAPseq/new_K562/k562_guide_targets_hg38.bed
+# https://mitra.stanford.edu/engreitz/oak/public/RayJagoda2024/DC-TAPseq/new_K562/k562_guide_target_arcs_hg38.bedpe
+# https://mitra.stanford.edu/engreitz/oak/public/RayJagoda2024/DC-TAPseq/new_K562/k562_TAP_seq_genes.bed
+# https://mitra.stanford.edu/engreitz/oak/public/RayJagoda2024/DC-TAPseq/new_K562/k562_signif_arcs.bedpe
+# https://mitra.stanford.edu/engreitz/oak/public/RayJagoda2024/DC-TAPseq/new_K562/k562_target_regions_hg38.bed
+# 
+# https://mitra.stanford.edu/engreitz/oak/public/RayJagoda2024/DC-TAPseq/new_WTC11/wtc11_guide_targets_hg38.bed
+# https://mitra.stanford.edu/engreitz/oak/public/RayJagoda2024/DC-TAPseq/new_WTC11/wtc11_guide_target_arcs_hg38.bedpe
+# https://mitra.stanford.edu/engreitz/oak/public/RayJagoda2024/DC-TAPseq/new_WTC11/wtc11_TAP_seq_genes.bed
+# https://mitra.stanford.edu/engreitz/oak/public/RayJagoda2024/DC-TAPseq/new_WTC11/wtc11_signif_arcs.bedpe
+# https://mitra.stanford.edu/engreitz/oak/public/RayJagoda2024/DC-TAPseq/new_WTC11/wtc11_target_regions_hg38.bed
   

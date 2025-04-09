@@ -99,18 +99,6 @@ rule filter_crispr_dataset:
   script:
     "../../scripts/benchmark_validation_datasets/encode_datasets/filter_crispr_dataset.R"
 
-# convert ENCODE format files to EPBenchmarking format files
-rule create_ep_benchmarking_dataset:
-  input: "results/benchmark_validation_datasets/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_{sample}_{sd}gStd_Sceptre_perCRE_{pwr}pwrAt{es}effect_{genome}.tsv.gz"
-  output: "results/benchmark_validation_datasets/create_encode_output/ENCODE/EPCrisprBenchmark/EPCrisprBenchmark_{sample}_{sd}gStd_{pwr}pwrAt{es}effect_{genome}.tsv.gz"
-  params:
-    effect_size = "log2FC", # Sceptre specific
-    min_pct_change = None,
-    cell_type = lambda wildcards: config["benchmark_validation_datasets"]["create_encode_output"]["metadata"][wildcards.sample]["cell_type"]
-  conda: "../../envs/r_process_crispr_data.yml"
-  script:
-    "../../scripts/benchmark_validation_datasets/encode_datasets/create_ep_benchmarking_dataset.R"
-
 ## Create ensemble dataset -------------------------------------------------------------------------
 
 # create ensembl CRISPR dataset in both ENCODE format    
