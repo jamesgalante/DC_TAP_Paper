@@ -107,15 +107,13 @@ rule create_sceptre_diffex_input_K562_DC_TAP_Seq:
     negative_control_genes = config["process_validation_datasets"]["sceptre_setup"]["negative_controls"]["K562_DC_TAP_Seq"]
   log: "results/process_validation_datasets/K562_DC_TAP_Seq/logs/create_sceptre_diffex_input_K562_DC_TAP_Seq.log"
   conda:
-    "../../envs/sceptre_power_simulations.yml"
+    "../../envs/all_packages.yml"
   resources:
     mem = "64G",
     time = "2:00:00"
   script:
     "../../scripts/process_validation_datasets/sceptre_setup/create_sceptre_diffex_input_K562_DC_TAP_Seq.R"
     
-### SOMEHOW THERE ARE DUPLICATES IN DISTANCES - FIGURE OUT WHY AND FIX AND FIX IN OTHER SCRIPTS TOO
-
 rule create_sceptre_diffex_input_WTC11_DC_TAP_Seq:
   input:
     dge = "results/process_validation_datasets/WTC11_DC_TAP_Seq/raw_counts/dge.rds",
@@ -132,7 +130,7 @@ rule create_sceptre_diffex_input_WTC11_DC_TAP_Seq:
     negative_control_genes = config["process_validation_datasets"]["sceptre_setup"]["negative_controls"]["WTC11_DC_TAP_Seq"]
   log: "results/process_validation_datasets/WTC11_DC_TAP_Seq/logs/create_sceptre_diffex_input_WTC11_DC_TAP_Seq.log"
   conda:
-    "../../envs/sceptre_power_simulations.yml"
+    "../../envs/all_packages.yml"
   resources:
     mem = "64G",
     time = "2:00:00"

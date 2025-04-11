@@ -1,0 +1,7 @@
+Category	Upregulated	Downregulated	WellPowered	UnderPowered	ExperimentCellType
+DistalElement_Gene	27	35	1620	2756	K562
+selfPromoter	0	115	12	35	K562
+DistalPromoter_Gene	32	30	1360	1378	K562
+Positive_Control_DistalElement_Gene	0	24	6	8	K562
+Random_DistalElement_Gene	26	16	1601	2724	K562
+Random_Validation_DistalElement_Gene	26	16	1574	2704	K562

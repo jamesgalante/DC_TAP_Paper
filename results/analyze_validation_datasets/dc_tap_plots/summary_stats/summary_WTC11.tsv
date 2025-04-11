@@ -1,0 +1,7 @@
+Category	Upregulated	Downregulated	WellPowered	UnderPowered	ExperimentCellType
+DistalElement_Gene	26	47	2480	1468	WTC11
+selfPromoter	0	95	11	16	WTC11
+DistalPromoter_Gene	20	28	1587	748	WTC11
+Positive_Control_DistalElement_Gene	0	1	1	2	WTC11
+Random_DistalElement_Gene	25	47	2475	1463	WTC11
+Random_Validation_DistalElement_Gene	25	47	2475	1463	WTC11

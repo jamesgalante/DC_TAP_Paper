@@ -16,12 +16,6 @@ sink(log, type = "message")
 
 ### LOADING FILES =============================================================
 
-# Download Sceptre
-# library(devtools)
-# message("Installing Sceptre")
-# devtools::install_github("katsevich-lab/sceptre")
-# message("Sceptre Installation Complete")
-
 message("Loading in packages")
 suppressPackageStartupMessages({
   library(sceptre)

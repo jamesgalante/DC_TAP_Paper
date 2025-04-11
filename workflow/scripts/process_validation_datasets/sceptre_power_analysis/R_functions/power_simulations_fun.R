@@ -81,23 +81,24 @@ sim_tapseq_sce <- function(sce, effect_size_mat) {
 simulate_tapseq_counts <- function(gene_means, gene_dispersions, cell_size_factors, effect_size_mat,
                                    gene_ids = names(gene_means),
                                    cell_ids = names(cell_size_factors)) {
-  
+
   # number of genes and cells
   n_genes <- length(gene_means)
   n_cells <- length(cell_size_factors)
-  
+
   # make mu matrix for simulation
   mu <- matrix(rep(gene_means, n_cells), ncol = n_cells)
-  #mu <- sweep(mu, 2, cell_size_factors, "*")  # add cell-to-cell variability based on size factors
-  
+  shuffled_size_factors <- sample(cell_size_factors, n_cells, replace = FALSE)
+  mu <- sweep(mu, 2, shuffled_size_factors, "*")  # add cell-to-cell variability based on size factors
+
   # inject perturbation effects by element-wise product of mu and effect_size_mat
   mu <- mu * effect_size_mat
-  
+
   # simulate counts
   message("Simulating tapseq counts")
   Matrix(rnbinom(n_cells * n_genes, mu = mu, size = 1 / unlist(gene_dispersions)), ncol = n_cells,
          dimnames = list(gene_ids, cell_ids))
-  
+
 }
 
 # guide-guide variability specific functions -------------------------------------------------------

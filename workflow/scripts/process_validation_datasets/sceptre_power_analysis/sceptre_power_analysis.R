@@ -26,16 +26,8 @@ suppressPackageStartupMessages({
   library(stringr)
   source(file.path(snakemake@scriptdir, "R_functions/differential_expression_fun.R"))
   source(file.path(snakemake@scriptdir, "R_functions/power_simulations_fun.R"))
+  library(sceptre)
 })
-
-
-# Load Sceptre
-message("Loading Sceptre")
-# devtools::install_github("katsevich-lab/sceptre")
-message("Installed Sceptre")
-library(sceptre)
-message("Loaded Sceptre")
-
 
 
 ### LOADING FILES =============================================================
@@ -44,12 +36,8 @@ message("Loaded Sceptre")
 message("Reading in snakemake variables")
 # convert 'percentage decrease' effect size to 'relative expression level'
 effect_size <- 1 - as.numeric(snakemake@wildcards$effect_size)
-guide_sd <- snakemake@params$guide_sd
+guide_sd <- 0.13
 reps <- snakemake@params$reps
-n_ctrl <- snakemake@params$n_ctrl
-
-
-# TEMPORARY FOR DEBUGGING BUT GENERALLY ON ANYWAY:
 n_ctrl <- FALSE
 
 
@@ -72,7 +60,6 @@ discovery_results <- data.frame()
 
 ###  Doing Thing =========================================================
 
-es_track <- list()
 # Runs each power analysis rep for one perturbation
 for (pert in perts){
   
@@ -118,11 +105,6 @@ for (pert in perts){
     # Simulate Counts
     message("Simulating Counts")
     sim_counts <- sim_tapseq_sce(pert_object, effect_size_mat = es_mat_use)
-    
-    # c <- rowMeans(assay(sim_counts, "counts")[, pert_status == 0])
-    # p <- rowMeans(assay(sim_counts, "counts")[, pert_status == 1])
-    # m <- mean(p/c)
-    # es_track <- append(es_track, m)
     
     # Now let's set up the discovery_analysis
     message("Setting up sceptre object for Disovery Analysis")

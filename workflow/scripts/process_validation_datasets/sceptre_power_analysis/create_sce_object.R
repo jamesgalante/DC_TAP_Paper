@@ -147,7 +147,6 @@ dispersion_values <- lapply(final_sceptre_object@response_precomputations, funct
 
 # Add to rowData
 rowData(sce)$dispersion <- dispersion_values[rownames(sce)]
-rowData(sce)$mean <- rowMeans(expr)
 
 
 ### CALCULATE SIZE FACTORS ====================================================
@@ -168,6 +167,7 @@ dds <- DESeqDataSetFromMatrix(countData = response_matrix,
 # compute size factors (removed lib size option for simplicity)
 dds <- estimateSizeFactors(dds, type = "poscounts")
 colData(sce)[, "size_factors"] <- sizeFactors(dds)
+rowData(sce)[, "mean"] <- rowMeans(counts(dds, normalized=TRUE))
 
 
 ### SAVE OUTPUT ===============================================================

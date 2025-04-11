@@ -10,6 +10,9 @@ prepare_gene_coords <- function(annotation_file, gene_ids) {
   names(genes) <- sub("\\..*", "", genes$gene_id)
   genes <- genes[names(genes) %in% gene_ids]
   
+  # calculate TSS coordinates
+  gene_tss <- resize(genes, width = 1, fix = "start")
+  
   # Create gene coordinates dataframe
   # Note: In genomic coordinates (like in annotation files):
   # - 'start' is ALWAYS the lower number and 'end' is ALWAYS the higher number
@@ -19,12 +22,12 @@ prepare_gene_coords <- function(annotation_file, gene_ids) {
   #   chr1 5000-7000 +  : Transcribed left to right, start=5000, end=7000
   #   chr1 5000-7000 -  : Transcribed right to left, start=5000, end=7000
   gene_coords <- data.frame(
-    gene_chr = as.character(seqnames(genes)),
-    gene_start = start(genes),
-    gene_end = end(genes),
-    gene_strand = as.character(strand(genes)),
-    gene = names(genes),
-    gene_name = genes$gene_name,
+    gene_chr = as.character(seqnames(gene_tss)),
+    gene_start = start(gene_tss),
+    gene_end = end(gene_tss),
+    gene_strand = as.character(strand(gene_tss)),
+    gene = names(gene_tss),
+    gene_name = gene_tss$gene_name,
     stringsAsFactors = FALSE
   )
   return(gene_coords)

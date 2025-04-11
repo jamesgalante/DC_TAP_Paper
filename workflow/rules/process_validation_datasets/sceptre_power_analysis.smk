@@ -9,66 +9,66 @@ rule sceptre_differential_expression:
     final_sceptre_object = "results/process_validation_datasets/{sample}/differential_expression/final_sceptre_object.rds"
   log: "results/process_validation_datasets/sceptre_power_analysis/logs/sceptre_differential_expression_{sample}.log"
   conda:
-    "../../envs/sceptre_power_simulations.yml"
+    "../../envs/all_packages.yml"
   resources:
     mem = "32G",
     time = "12:00:00"
   script:
     "../../scripts/process_validation_datasets/sceptre_power_analysis/sceptre_differential_expression.R"
     
-# Run sceptre differential expression with "mixture"
-rule sceptre_differential_expression_w_mixture:
-    input:
-      sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds"
-    output:
-      discovery_results = "results/process_validation_datasets/{sample}/differential_expression_w_mixture/results_run_discovery_analysis.rds",
-      final_sceptre_object = "results/process_validation_datasets/{sample}/differential_expression_w_mixture/final_sceptre_object.rds"
-    log: "results/process_validation_datasets/sceptre_power_analysis/logs/sceptre_differential_expression_w_mixture_{sample}.log"
-    conda:
-      "../../envs/sceptre_power_simulations.yml"
-    resources:
-      mem = "32G",
-      time = "12:00:00"
-    script:
-      "../../scripts/process_validation_datasets/sceptre_power_analysis/sceptre_differential_expression_w_mixture.R"
-
-# Run sceptre differential expression include all the negative controls tested against all elements
-rule sceptre_differential_expression_w_negative_controls:
-  input:
-    sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds",
-    gene_gRNA_group_pairs = "results/process_validation_datasets/{sample}/gene_gRNA_group_pairs.rds",
-    gRNA_groups_table = "results/process_validation_datasets/{sample}/gRNA_groups_table.rds",
-    features = "resources/process_validation_datasets/sceptre_setup/{sample}/cell_ranger_output/features.tsv.gz"
-  output:
-    discovery_results = "results/process_validation_datasets/{sample}/differential_expression_w_negative_controls/results_run_discovery_analysis.rds",
-    final_sceptre_object = "results/process_validation_datasets/{sample}/differential_expression_w_negative_controls/final_sceptre_object.rds"
-  params:
-    negative_control_genes = lambda wildcards: config["process_validation_datasets"]["sceptre_setup"]["negative_controls"][wildcards.sample]
-  log: "results/process_validation_datasets/{sample}/differential_expression_w_negative_controls/sceptre_differential_expression_w_negative_controls.log"
-  conda:
-    "../../envs/sceptre_power_simulations.yml"
-  resources:
-    mem = "32G",
-    time = "12:00:00"
-  script:
-    "../../scripts/process_validation_datasets/sceptre_power_analysis/sceptre_diffex_with_negative_controls.R"
-
-# Run sceptre differential expression with "singleton"
-rule sceptre_singleton_differential_expression:
-  input:
-    sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds",
-    gene_gRNA_group_pairs = "results/process_validation_datasets/{sample}/gene_gRNA_group_pairs.rds"
-  output:
-    discovery_results = "results/process_validation_datasets/{sample}/singleton_differential_expression/results_run_discovery_analysis.rds",
-    final_sceptre_object = "results/process_validation_datasets/{sample}/singleton_differential_expression/final_sceptre_object.rds"
-  log: "results/process_validation_datasets/{sample}/singleton_differential_expression/singleton_discovery_results.log"
-  conda:
-    "../../envs/sceptre_power_simulations.yml"
-  resources:
-    mem = "32G",
-    time = "12:00:00"
-  script:
-    "../../scripts/process_validation_datasets/sceptre_power_analysis/sceptre_singleton_differential_expression.R"
+# # Run sceptre differential expression with "mixture"
+# rule sceptre_differential_expression_w_mixture:
+#     input:
+#       sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds"
+#     output:
+#       discovery_results = "results/process_validation_datasets/{sample}/differential_expression_w_mixture/results_run_discovery_analysis.rds",
+#       final_sceptre_object = "results/process_validation_datasets/{sample}/differential_expression_w_mixture/final_sceptre_object.rds"
+#     log: "results/process_validation_datasets/sceptre_power_analysis/logs/sceptre_differential_expression_w_mixture_{sample}.log"
+#     conda:
+#       "../../envs/all_packages.yml"
+#     resources:
+#       mem = "32G",
+#       time = "12:00:00"
+#     script:
+#       "../../scripts/process_validation_datasets/sceptre_power_analysis/sceptre_differential_expression_w_mixture.R"
+# 
+# # Run sceptre differential expression include all the negative controls tested against all elements
+# rule sceptre_differential_expression_w_negative_controls:
+#   input:
+#     sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds",
+#     gene_gRNA_group_pairs = "results/process_validation_datasets/{sample}/gene_gRNA_group_pairs.rds",
+#     gRNA_groups_table = "results/process_validation_datasets/{sample}/gRNA_groups_table.rds",
+#     features = "resources/process_validation_datasets/sceptre_setup/{sample}/cell_ranger_output/features.tsv.gz"
+#   output:
+#     discovery_results = "results/process_validation_datasets/{sample}/differential_expression_w_negative_controls/results_run_discovery_analysis.rds",
+#     final_sceptre_object = "results/process_validation_datasets/{sample}/differential_expression_w_negative_controls/final_sceptre_object.rds"
+#   params:
+#     negative_control_genes = lambda wildcards: config["process_validation_datasets"]["sceptre_setup"]["negative_controls"][wildcards.sample]
+#   log: "results/process_validation_datasets/{sample}/differential_expression_w_negative_controls/sceptre_differential_expression_w_negative_controls.log"
+#   conda:
+#     "../../envs/all_packages.yml"
+#   resources:
+#     mem = "32G",
+#     time = "12:00:00"
+#   script:
+#     "../../scripts/process_validation_datasets/sceptre_power_analysis/sceptre_diffex_with_negative_controls.R"
+# 
+# # Run sceptre differential expression with "singleton"
+# rule sceptre_singleton_differential_expression:
+#   input:
+#     sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds",
+#     gene_gRNA_group_pairs = "results/process_validation_datasets/{sample}/gene_gRNA_group_pairs.rds"
+#   output:
+#     discovery_results = "results/process_validation_datasets/{sample}/singleton_differential_expression/results_run_discovery_analysis.rds",
+#     final_sceptre_object = "results/process_validation_datasets/{sample}/singleton_differential_expression/final_sceptre_object.rds"
+#   log: "results/process_validation_datasets/{sample}/singleton_differential_expression/singleton_discovery_results.log"
+#   conda:
+#     "../../envs/all_packages.yml"
+#   resources:
+#     mem = "32G",
+#     time = "12:00:00"
+#   script:
+#     "../../scripts/process_validation_datasets/sceptre_power_analysis/sceptre_singleton_differential_expression.R"
 
 rule create_sce:
   input:
@@ -84,7 +84,7 @@ rule create_sce:
      "../../scripts/process_validation_datasets/sceptre_power_analysis/create_sce_object.R"
     
 # Create and split the discovery pairs file
-N_BATCHES = 50
+N_BATCHES = 100
 rule split_target_response_pairs:
   input:
     gene_gRNA_group_pairs = "results/process_validation_datasets/{sample}/gene_gRNA_group_pairs.rds"
@@ -104,8 +104,6 @@ rule split_target_response_pairs:
 
 # Run the power simulation with sceptre for each split
 N_REPS = 100
-N_CTRL = 3500 # In script, this is hardcoded to be turned off i.e. "FALSE"
-GUIDE_SD = 0.13
 rule sceptre_power_analysis:
   input:
     gene_gRNA_group_pairs_split = "results/process_validation_datasets/{sample}/pair_splits/gene_gRNA_group_pairs_{split}.txt",
@@ -115,9 +113,7 @@ rule sceptre_power_analysis:
   output:
     power_analysis_output = "results/process_validation_datasets/{sample}/power_analysis/effect_size_{effect_size}/power_analysis_output_{split}.tsv"
   params:
-    reps = N_REPS, # Hardcoding the number of reps for the power analysis
-    n_ctrl = N_CTRL,
-    guide_sd = GUIDE_SD
+    reps = N_REPS
   log: "results/process_validation_datasets/sceptre_power_analysis/logs/sceptre_power_analysis_es{effect_size}_split{split}_{sample}.log"
   conda:
     "../../envs/sceptre_power_simulations.yml"

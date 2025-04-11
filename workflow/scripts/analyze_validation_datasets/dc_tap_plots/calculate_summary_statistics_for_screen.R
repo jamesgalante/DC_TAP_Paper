@@ -406,15 +406,91 @@ combined_joined_w_categories_fixed <- combined_joined_w_categories %>%
 
 ### CREATE SUMMARIZED COMBINED JOINED W CATEGORIES ============================
 
-# Add distances by joining with the create_ensemble_encode_input table and adding distances
-summarized_categories <- combined_joined_w_categories_fixed %>% 
+# Add the guide names for the guide targets to create column 2 of the IGVF formatted file
+target_names_w_guides <- rbind(
+  k562_guide_targets %>% 
+    filter(!target_type %in% c("safe_targeting", "negative_control")) %>%
+    group_by(target_name) %>% 
+    summarise(all_names = paste(name, collapse = ","), .groups = "drop") %>%
+    mutate(cell_type = "K562"),
+  wtc11_guide_targets %>%
+    filter(!target_type %in% c("safe_targeting", "negative_control")) %>%
+    group_by(target_name) %>% 
+    summarise(all_names = paste(name, collapse = ","), .groups = "drop") %>%
+    mutate(cell_type = "WTC11")
+)
+
+# Create IGVF formatted file
+igvf_formatted_file <- combined_joined_w_categories_fixed %>%
   left_join(
     create_ensemble_encode_input %>% 
-      select(chrom, chromStart, chromEnd, measuredGeneSymbol, Reference, distToTSS), 
+      select(chrom, chromStart, chromEnd, measuredGeneSymbol, Reference, measuredEnsemblID, pValue), 
     by = c("chrom", "chromStart", "chromEnd", "measuredGeneSymbol", "Reference")) %>%
-  select(chrom, chromStart, chromEnd, measuredGeneSymbol, pValueAdjusted, EffectSize, Significant, 
-         ExperimentCellType, target_type, distToTSS, DistalElement_Gene, selfPromoter, DistalPromoter_Gene, 
-         Positive_Control_DistalElement_Gene, Random_DistalElement_Gene, Random_Validation_DistalElement_Gene)
+  left_join(
+    target_names_w_guides,
+    by = c("target_name", "ExperimentCellType" = "cell_type")
+  ) %>%
+  mutate(
+    intended_target_name = paste0(chrom, ":", chromStart, "-", chromEnd),
+    `guide_id(s)` = as.character(all_names),
+    targeting_chr = as.character(chrom),
+    targeting_start = as.integer(chromStart),
+    targeting_end = as.integer(chromEnd),
+    type = as.character(target_type),
+    gene_id = as.character(measuredEnsemblID),
+    gene_symbol = as.character(measuredGeneSymbol),
+    sceptre_log2_fc = as.numeric(log2(EffectSize + 1)),
+    sceptre_p_value = as.numeric(pValue),
+    sceptre_adj_p_value = as.numeric(pValueAdjusted),
+    significant = as.logical(Significant),
+    sample_term_name = as.character(ExperimentCellType),
+    sample_term_id = as.character(NA_character_),
+    sample_summary_short = as.character(ExperimentCellType),
+    power_at_effect_size_10 = as.numeric(PowerAtEffectSize10),
+    power_at_effect_size_15 = as.numeric(PowerAtEffectSize15),
+    power_at_effect_size_20 = as.numeric(PowerAtEffectSize20),
+    power_at_effect_size_25 = as.numeric(PowerAtEffectSize25),
+    power_at_effect_size_50 = as.numeric(PowerAtEffectSize50),
+    notes = as.character(NA_character_)
+  ) %>%
+  select(intended_target_name, `guide_id(s)`, targeting_chr, targeting_start, targeting_end, type, gene_id, gene_symbol, sceptre_log2_fc,
+         sceptre_p_value, sceptre_adj_p_value, significant, sample_term_name, sample_term_id, sample_summary_short, power_at_effect_size_10, 
+         power_at_effect_size_15, power_at_effect_size_20, power_at_effect_size_25, power_at_effect_size_50, notes)
+
+# Add distance to TSS, the categories, original target names, and hg19 coordinates
+summarized_categories <- igvf_formatted_file %>%
+  left_join(
+    create_ensemble_encode_input %>%
+      mutate(CellType = str_extract(Reference, "^[^_]+")) %>%  # Extract string before first "_"
+      select(chrom, chromStart, chromEnd, measuredGeneSymbol, CellType, distToTSS),
+    by = c("targeting_chr" = "chrom", "targeting_start" = "chromStart", "targeting_end" = "chromEnd", 
+           "gene_symbol" = "measuredGeneSymbol", "sample_term_name" = "CellType")
+  ) %>%
+  left_join(
+    combined_joined_w_categories_fixed %>%
+      select(chrom, chromStart, chromEnd, measuredGeneSymbol, ExperimentCellType, 
+             hg19_target_coords, EffectSize, chrTSS, startTSS, endTSS, hg19_target_chr, hg19_target_start, 
+             hg19_target_end, target_name, DistalElement_Gene, selfPromoter, DistalPromoter_Gene, ValidConnection, 
+             Positive_Control_DistalElement_Gene, Random_DistalElement_Gene, Random_Validation_DistalElement_Gene),
+    by = c("targeting_chr" = "chrom", "targeting_start" = "chromStart", "targeting_end" = "chromEnd", 
+           "gene_symbol" = "measuredGeneSymbol", "sample_term_name" = "ExperimentCellType")
+  ) %>%
+  dplyr::rename(
+    intended_target_name_hg38 = intended_target_name,
+    targeting_chr_hg38 = targeting_chr,
+    targeting_start_hg38 = targeting_start,
+    targeting_end_hg38 = targeting_end,
+    intended_target_name_hg19 = hg19_target_coords,
+    log2FC_EffectSize = sceptre_log2_fc,
+    pctChange_EffectSize = EffectSize,
+    chrTSS_hg38 = chrTSS,
+    startTSS_hg38 = startTSS,
+    endTSS_hg38 = endTSS,
+    targeting_chr_hg19 = hg19_target_chr,
+    targeting_start_hg19 = hg19_target_start,
+    targeting_end_hg19 = hg19_target_end,
+    design_file_target_name = target_name
+  )
 
 
 ### SAVE OUTPUT ===============================================================
@@ -423,6 +499,7 @@ summarized_categories <- combined_joined_w_categories_fixed %>%
 message("Saving output files")
 write_tsv(combined_joined_w_categories_fixed, snakemake@output$combined_joined_w_categories)
 write_tsv(summarized_categories, snakemake@output$summarized_categories)
+write_tsv(igvf_formatted_file, snakemake@output$igvf_formatted_file)
 write_tsv(summary_K562, snakemake@output$summary_K562)
 write_tsv(summary_WTC11, snakemake@output$summary_WTC11)
 

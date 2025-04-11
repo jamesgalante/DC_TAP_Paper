@@ -4,13 +4,14 @@ rule calculate_summary_statistics_for_screen:
   input:
     combined_validation = "results/benchmark_validation_datasets/crispr_benchmarking/expt_pred_merged_annot/validation_expt_pred_merged_annot.txt.gz",
     guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"]),
-    encode_training_dataset = "resources/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/training_expt_pred_merged_annot.txt.gz",
+    encode_training_dataset = "resources/analyze_validation_datasets/expt_pred_merged_annot/training_expt_pred_merged_annot.txt.gz",
     create_ensemble_encode_input = expand("results/benchmark_validation_datasets/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_{sample}_0.13gStd_Sceptre_perCRE_0.8pwrAt15effect_GRCh38.tsv.gz", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
   output:
-    combined_joined_w_categories = "results/analyze_validation_datasets/dc_tap_plots/combined_joined_w_categories.tsv",
-    summarized_categories = "results/analyze_validation_datasets/dc_tap_plots/summarized_categories.tsv",
-    summary_K562 = "results/analyze_validation_datasets/dc_tap_plots/summary_K562.tsv",
-    summary_WTC11 = "results/analyze_validation_datasets/dc_tap_plots/summary_WTC11.tsv"
+    combined_joined_w_categories = "results/analyze_validation_datasets/dc_tap_plots/summary_stats/combined_joined_w_categories.tsv",
+    summarized_categories = "results/analyze_validation_datasets/dc_tap_plots/summary_stats/summarized_categories.tsv",
+    igvf_formatted_file = "results/analyze_validation_datasets/dc_tap_plots/summary_stats/igvf_formatted_file.tsv",
+    summary_K562 = "results/analyze_validation_datasets/dc_tap_plots/summary_stats/summary_K562.tsv",
+    summary_WTC11 = "results/analyze_validation_datasets/dc_tap_plots/summary_stats/summary_WTC11.tsv"
   log: "results/analyze_validation_datasets/dc_tap_plots/logs/calculate_summary_statistics_for_screen.log"
   conda:
     "../../envs/analyze_crispr_screen.yml"
