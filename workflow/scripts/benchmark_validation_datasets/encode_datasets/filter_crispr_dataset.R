@@ -75,10 +75,5 @@ output <- dat %>%
     TRUE ~ ValidConnection
   ))
 
-# filter out any invalid connections if specified
-if (snakemake@params$remove_filtered_pairs == TRUE) {
-  output <- filter(output, ValidConnection == "TRUE")
-}
-
 # write output to file
 write_tsv(output, file = snakemake@output[[1]])

@@ -110,7 +110,14 @@ if (nrow(results) != results_pairs) {
 # create GRangesList with all annotated exons per annotated gene and transcripts
 exons <- annot[annot$type == "exon"]
 genes <- split(exons, f = exons$gene_id)
-txs <- split(exons, f = exons$transcript_id)
+
+# Create GRangesList with all protein coding gene locus coordinates
+protein_coding_exons <- annot[annot$gene_type == "protein_coding" & annot$type == "exon"]
+protein_coding_gene_loci <- unlist(range(split(protein_coding_exons, f = protein_coding_exons$gene_id)))
+
+# Create GRangesList with all protein coding transcripts
+protein_coding_transcript_exons <- protein_coding_exons[protein_coding_exons$transcript_type == "protein_coding"]
+txs <- split(protein_coding_transcript_exons, f = protein_coding_transcript_exons$transcript_id) # But some of these transcripts are not protein_coding
 
 # get gene locus coordinates
 gene_loci <- unlist(range(genes))
@@ -130,9 +137,10 @@ mcols(promoters) <- DataFrame(feature_id = gene_ids_per_tx_id[names(promoters)],
 # add metadata columns to exons and gene loci
 mcols(exons) <- DataFrame(feature_id = exons$gene_id, type = "exon")
 mcols(gene_loci) <- DataFrame(feature_id = names(gene_loci), type = "gene")
+mcols(protein_coding_gene_loci) <- DataFrame(feature_id = names(protein_coding_gene_loci), type = "protein_coding_gene")
 
 # combine exons, genes and promoters into one feature GRanges object
-features <- c(exons, gene_loci, promoters)
+features <- c(exons, gene_loci, protein_coding_gene_loci, promoters)
 names(features) <- NULL
 
 # extract perturbation coordinates
@@ -158,30 +166,34 @@ feature_ovl <- feature_ovl %>%
 feature_ovl <- feature_ovl %>% 
   left_join(gene_ids, by = c("feature_id" = "measuredEnsemblID"))
 
-# summarize feature overlaps
+# summarize feature overlaps - for each pert - gene pair that we've tested, get a list of the overlapping genes for that type (promoter, genebody)
 feature_ovl_summary <- feature_ovl %>% 
   group_by(perturbation, measuredEnsemblID, type) %>% 
   summarize(ovl = n() > 0,
             ovl_target = unique(measuredEnsemblID) %in% feature_id,
             promoter_gene = if (type[1] == "promoter") paste(unique(measuredGeneSymbol), collapse = "|") else NA_character_, # added by James
+            protein_coding_genebody_gene = if (type[1] == "protein_coding_gene") paste(unique(measuredGeneSymbol), collapse = "|") else NA_character_, 
             .groups = "drop")
 
 # reformat overlap summary
 flag_summary <- feature_ovl_summary %>% 
-  select(-promoter_gene) %>%
+  select(-promoter_gene, -protein_coding_genebody_gene) %>%
   pivot_longer(cols = c(ovl, ovl_target), names_to = "ovl_type", values_to = "ovl") %>% 
   unite(type, ovl_type, type, sep = "_") %>% 
   pivot_wider(names_from = type, values_from = ovl, values_fill = FALSE)
 
-# Separately, aggregate promoter_gene values for promoter rows - added by James
+# Separately, grab the promoter and gene body overlaps
 promoter_summary <- feature_ovl_summary %>%
   filter(type == "promoter") %>%
-  group_by(perturbation, measuredEnsemblID) %>%
-  summarize(promoter_gene = paste(unique(promoter_gene[!is.na(promoter_gene)]), collapse = ";"),
-            .groups = "drop")
+  select(perturbation, measuredEnsemblID, promoter_gene)
+protein_coding_gene_body_summary <- feature_ovl_summary %>%
+  filter(type == "protein_coding_gene") %>%
+  select(perturbation, measuredEnsemblID, protein_coding_genebody_gene)
 
 # Join the flag summary and promoter summary so each key appears only once - added by James
-feature_ovl_summary_final <- left_join(flag_summary, promoter_summary, by = c("perturbation", "measuredEnsemblID"))
+feature_ovl_summary_final <- flag_summary %>%
+  left_join(promoter_summary, by = c("perturbation", "measuredEnsemblID")) %>%
+  left_join(protein_coding_gene_body_summary, by = c("perturbation", "measuredEnsemblID"))
 
 # infer whether perturbation overlaps intron
 feature_ovl_summary_final <- feature_ovl_summary_final %>% 
@@ -190,7 +202,7 @@ feature_ovl_summary_final <- feature_ovl_summary_final %>%
 
 # add selected overlaps to results
 results_tmp <- feature_ovl_summary_final %>% 
-  select(perturbation, measuredEnsemblID, ovl_target_exon, ovl_target_intron, ovl_promoter, promoter_gene) %>% 
+  select(perturbation, measuredEnsemblID, ovl_target_exon, ovl_target_intron, ovl_target_promoter, ovl_promoter, promoter_gene, ovl_protein_coding_gene, protein_coding_genebody_gene) %>% 
   left_join(results, ., by = c("perturbation", "measuredEnsemblID"))
 
 # create ValidConnection column based on overlaps
@@ -200,9 +212,11 @@ results <- results_tmp %>%
     conn <- paste(c(
       if (isTRUE(ovl_target_exon)) "overlaps target gene exon" else NULL,
       if (isTRUE(ovl_target_intron)) "overlaps target gene intron" else NULL,
-      if (isTRUE(ovl_promoter)) paste("overlaps potential promoter:", promoter_gene) else NULL
+      if (isTRUE(ovl_target_promoter)) "overlaps target promoter" else NULL,
+      if (isTRUE(ovl_promoter)) paste("overlaps potential promoter:", promoter_gene) else NULL,
+      if (isTRUE(ovl_protein_coding_gene)) paste("overlaps potential protein coding gene body:", protein_coding_genebody_gene) else NULL
     ), collapse = "; ")
-    if (nchar(conn) == 0) "TRUE" else conn
+    if (nchar(conn) == 0) "" else conn
   }) %>%
   ungroup()
 

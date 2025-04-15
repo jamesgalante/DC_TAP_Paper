@@ -36,6 +36,9 @@ encode_training_dataset <- read_tsv(snakemake@input$encode_training_dataset)
 # Load in the create_ensemble_encode input files
 create_ensemble_encode_input <- bind_rows(lapply(snakemake@input$create_ensemble_encode_input, read_tsv))
 
+# Load in abc canonical TSS file
+abc_canonical_tss <- read_tsv(snakemake@input$abc_canonical_tss)
+
 
 ### ADD TSS CONTROL INFORMATION ===============================================
 
@@ -173,6 +176,230 @@ combined_joined <- combined_joined %>%
   mutate(de_assigned_gene = ifelse(ExperimentCellType == "WTC11" & measuredGeneSymbol == "POU5F1" & target_type == "DE", "POU5F1", de_assigned_gene))
 
 
+### ADDING ABC TSS OVERLAP COLUMN =============================================
+
+# Subset for only protein_coding genes
+abc_canonical_tss <- abc_canonical_tss %>% filter(gene_type == "protein_coding")
+
+# Convert tibble to GRanges object
+abc_canonical_tss_gr <- GRanges(
+  seqnames = abc_canonical_tss$`#chr`,
+  ranges = IRanges(start = abc_canonical_tss$start, end = abc_canonical_tss$end),
+  strand = abc_canonical_tss$strand,
+  name = abc_canonical_tss$name,
+  score = abc_canonical_tss$score,
+  Ensembl_ID = abc_canonical_tss$Ensembl_ID,
+  gene_type = abc_canonical_tss$gene_type
+)
+
+# Resize to 1000bp (from 500bp) while fixing the center point
+abc_canonical_tss_extended_gr <- resize(abc_canonical_tss_gr, width = 1000, fix = "center")
+
+# Create a GRanges object with all elements
+combined_joined_elements_gr <- GRanges(
+  seqnames = combined_joined$chrom,
+  ranges = IRanges(start = combined_joined$chromStart, end = combined_joined$chromEnd),
+  strand = "*",
+  name = combined_joined$name
+)
+
+# Overlap the abc promoters with all elements
+overlaps <- findOverlaps(abc_canonical_tss_extended_gr, combined_joined_elements_gr)
+
+# Create a mapping from elements to TSS genes
+element_to_tss_map <- data.frame(
+  element_idx = subjectHits(overlaps),
+  tss_idx = queryHits(overlaps)
+)
+
+# Get the gene names for each TSS
+element_to_tss_map$tss_gene <- abc_canonical_tss_gr$name[element_to_tss_map$tss_idx]
+
+# Group by element and create a list of overlapping TSS genes
+element_tss_list <- element_to_tss_map %>%
+  group_by(element_idx) %>%
+  summarize(overlapping_tss = list(tss_gene))
+
+# Create a named vector for easy lookup
+element_names <- combined_joined$name
+names(element_names) <- seq_along(element_names)
+
+# Add the column to combined_joined
+combined_joined <- combined_joined %>%
+  mutate(
+    abc_tss_overlap = NA,
+    element_idx = row_number()
+  ) %>%
+  left_join(element_tss_list, by = c("element_idx" = "element_idx")) %>%
+  mutate(
+    abc_tss_overlap = case_when(
+      !is.na(overlapping_tss) ~ map_chr(overlapping_tss, ~ paste(.x, collapse = ",")),
+      is.na(overlapping_tss) ~ NA_character_
+    )
+  ) %>%
+  select(-element_idx, -overlapping_tss)
+
+
+### ADD DISTANCE TO ABC TSS COLUMN ============================================
+
+# Load in all genes (including lincRNAs etc)
+abc_canonical_tss_all_genes <- read_tsv(snakemake@input$abc_canonical_tss)
+
+# Check which measured genes are not in the ABC TSS list
+measured_genes <- unique(combined_joined$measuredGeneSymbol)
+abc_genes <- unique(abc_canonical_tss_all_genes$name)
+missing_genes <- setdiff(measured_genes, abc_genes)
+print(missing_genes)
+
+# Do these genes have other names that are in our abc file? - looked at GeneCards for any aliases
+# "TENT5B": "FAM46B" %in% abc_genes
+# "KHDC4": "KIAA0907" %in% abc_genes
+# "ZNRD2": "SSSCA1" %in% abc_genes
+# "ANTKMT": "FAM173A" %in% abc_genes
+# "JPT2": "HN1L" %in% abc_genes
+# "ATP5MC1": "ATP5G1" %in% abc_genes
+# "FDX2": "FDX1L" %in% abc_genes
+# "GATD3A": "C21orf33" %in% abc_genes
+# "RBIS": "C8orf59" %in% abc_genes
+
+# Define alternative names mapping
+alternative_names <- c(
+  "TENT5B" = "FAM46B",
+  "KHDC4" = "KIAA0907", 
+  "ZNRD2" = "SSSCA1",
+  "ANTKMT" = "FAM173A", 
+  "JPT2" = "HN1L",
+  "ATP5MC1" = "ATP5G1", 
+  "FDX2" = "FDX1L",
+  "GATD3A" = "C21orf33", 
+  "RBIS" = "C8orf59"
+)
+
+# Create a lookup table for gene TSS centers
+tss_centers <- abc_canonical_tss_all_genes %>%
+  mutate(tss_center = (start + end) / 2) %>%
+  select(`#chr`, name, tss_center)
+
+# Calculate element centers and join with TSS data
+combined_joined <- combined_joined %>%
+  mutate(
+    element_center = (chromStart + chromEnd) / 2,
+    # Use alternative name for joining if it exists, otherwise use original name
+    join_gene_name = ifelse(
+      measuredGeneSymbol %in% names(alternative_names),
+      alternative_names[measuredGeneSymbol],
+      measuredGeneSymbol
+    )
+  ) %>%
+  left_join(
+    tss_centers %>% select(`#chr`, name, tss_center), 
+    by = c("chrom" = "#chr", "join_gene_name" = "name")
+  ) %>%
+  mutate(
+    # Calculate distance only when chromosomes match and TSS exists
+    distance_to_abc_canonical_TSS = if_else(
+      !is.na(tss_center), 
+      abs(element_center - tss_center),
+      NA_real_
+    )
+  ) %>%
+  select(-element_center, -tss_center, -join_gene_name)
+
+# Quick summary
+message("Elements with TSS distance: ", sum(!is.na(combined_joined$distance_to_abc_canonical_TSS)) / nrow(combined_joined) * 100, "%")
+
+### ADD COLUMN FOR OVERLAP WITH GENE BODY =====================================
+
+# Create a column for a general flag indicating overlap with a protein coding gene body
+combined_joined <- combined_joined %>%
+  rowwise() %>%  
+  mutate(
+    # First create the list column as before
+    protein_coding_gene_body_overlap = case_when(
+      is.na(ValidConnection) ~ list(NA_character_),
+      str_detect(ValidConnection, "overlaps potential protein coding gene body:") ~ {
+        # Extract the substring, split on "|" and trim each element
+        genes <- str_extract(ValidConnection, "(?<=overlaps potential protein coding gene body:)[^;]+")
+        list(trimws(unlist(str_split(genes, "\\|"))))
+      },
+      TRUE ~ list(NA_character_)
+    ),
+    # Then create a string version using ALL elements in the list
+    protein_coding_gene_body_overlap = case_when(
+      all(is.na(unlist(protein_coding_gene_body_overlap))) ~ NA_character_,
+      TRUE ~ paste(unlist(protein_coding_gene_body_overlap), collapse = ",")
+    )
+  ) %>%
+  ungroup()
+
+
+### ADD COLUMN FOR PROMOTER OVERLAP ===========================================
+
+# Create the gencode_promoter_overlap column
+combined_joined <- combined_joined %>%
+  rowwise() %>%  
+  mutate(
+    # First create the list column as before
+    gencode_promoter_overlap = case_when(
+      is.na(ValidConnection) ~ list(NA_character_),
+      str_detect(ValidConnection, "overlaps potential promoter:") ~ {
+        # Extract the substring, split on "|" and trim each element
+        genes <- str_extract(ValidConnection, "(?<=overlaps potential promoter:)[^;]+")
+        list(trimws(unlist(str_split(genes, "\\|"))))
+      },
+      TRUE ~ list(NA_character_)
+    ),
+    # Then create a string version using ALL elements in the list
+    gencode_promoter_overlap = case_when(
+      all(is.na(unlist(gencode_promoter_overlap))) ~ NA_character_,
+      TRUE ~ paste(unlist(gencode_promoter_overlap), collapse = ",")
+    )
+  ) %>%
+  ungroup() 
+
+# Add three columns indicating if the measuredGeneSymbol is in "TSS_control_gene", "abc_tss_overlap" or "gencode_promoter_overlap" T/F
+combined_joined <- combined_joined %>%
+  # First convert empty strings to NA
+  mutate(
+    abc_tss_overlap = if_else(abc_tss_overlap == "", NA_character_, abc_tss_overlap)
+  ) %>%
+  mutate(
+    # First, convert comma-separated strings back to lists where needed
+    abc_tss_overlap_list = case_when(
+      is.na(abc_tss_overlap) ~ list(NA_character_),
+      TRUE ~ lapply(strsplit(abc_tss_overlap, ","), function(x) x)
+    ),
+    gencode_promoter_overlap_list = case_when(
+      is.na(gencode_promoter_overlap) ~ list(NA_character_),
+      TRUE ~ lapply(strsplit(gencode_promoter_overlap, ","), function(x) x)
+    )
+  ) %>%
+  rowwise() %>%
+  mutate(
+    # Now check if measuredGeneSymbol is in each list
+    measuredGene_in_TSS_control = !is.na(TSS_control_gene) && measuredGeneSymbol == TSS_control_gene,
+    
+    # For abc_tss_overlap - check if measuredGeneSymbol is in the list as an exact match
+    measuredGene_in_abc_tss = if(all(is.na(unlist(abc_tss_overlap_list)))) {
+      FALSE
+    } else {
+      measuredGeneSymbol %in% unlist(abc_tss_overlap_list)
+    },
+    
+    # For gencode_promoter_overlap - check if measuredGeneSymbol is in the list as an exact match
+    measuredGene_in_gencode_promoter = if(all(is.na(unlist(gencode_promoter_overlap_list)))) {
+      FALSE
+    } else {
+      measuredGeneSymbol %in% unlist(gencode_promoter_overlap_list)
+    }
+  ) %>%
+  ungroup() %>%
+  # Optionally remove the temporary list columns if not needed further
+  select(-abc_tss_overlap_list, -gencode_promoter_overlap_list) %>%
+  # Create a T/F column if the abc or gencode promoter overlap lists are TRUE
+  mutate(abc_or_gencode_overlap = measuredGene_in_abc_tss | measuredGene_in_gencode_promoter)
+
+
 ### LABELLING EACH PAIR BY CATEGORY ===========================================
 
 # E-G table: We want to label each pair as T/F with regard to each of the following categories
@@ -184,79 +411,86 @@ combined_joined <- combined_joined %>%
   # Category: `Random Validation DistalElement-Gene`
 
 # Define vector of ENCODE filter flags
-ValidConnection_Flags <- c("TSS targeting guide\\(s\\)", "distance <1000", "overlaps target gene exon", "overlaps potential promoter", "overlaps target gene intron")
+ValidConnection_Flags <- c("distance <1000", "overlaps target gene exon", "overlaps target gene intron") # Because the other flags are already processed and can be deduced by separate columns
+
+# Edit the ValidConnection column to be "" when NA
+combined_joined <- combined_joined %>%
+  mutate(ValidConnection = ifelse(is.na(ValidConnection), "", ValidConnection))
+
+# Create a new column indicating if the element overlaps a promoter defined by either abc_tss_overlap, gencode_promoter_overlap, or TSS_control_gene
+combined_joined <- combined_joined %>%
+  mutate(distal_or_promoter = ifelse(is.na(abc_tss_overlap) & is.na(gencode_promoter_overlap) & is.na(TSS_control_gene), "distal", "promoter"))
+
+# DistalElement-Gene
+  # filter out if element-gene "distance <1000", 
+  # filter out if "abc_tss_overlap" "gencode_promoter_overlap" or "TSS_control_gene" are non-empty (meaning the element overlaps a promoter in abc or gencode OR is labelled as a TSS control gene) 
+  # filter out if element "overlaps target gene intron", "overlaps target gene exon"
 
 # Category: `DistalElement-Gene`
 # These are all pairs that pass ENCODE filters - non-significant pairs that pass ENCODE filters, but are underpowered are included in this set
 combined_joined_w_categories <- combined_joined %>%
-  mutate(DistalElement_Gene = ifelse(!str_detect(ValidConnection, str_c(ValidConnection_Flags, collapse = "|")), TRUE, FALSE))                 
+  mutate(DistalElement_Gene = 
+           ifelse(
+             !str_detect(ValidConnection, str_c(ValidConnection_Flags, collapse = "|")) & (distal_or_promoter == "distal"), TRUE, FALSE
+           )
+         )                 
 
-# There are two cases that we want to account for
-  # When there's "overlaps potential promoter" - what promoter is it overlapping -> is that promoter the same as the measuredGeneSymbol?
-  # "TSS targeting guide(s)" - In this case is the measuredGeneSymbol == TSS_control_gene?
-# When the ValidConnection parameter includes, "overlaps potential promoter", extract all promoters (if there are multiple) and put into list
-combined_joined_w_categories <- combined_joined_w_categories %>%
-  rowwise() %>%  # Process each row individually
-  mutate(PromoterGeneList = if (str_detect(ValidConnection, "overlaps potential promoter:")) {
-    # Extract the substring, split on "|" and trim each element,
-    # then wrap in a list so the column remains a list-column.
-    list(trimws(unlist(str_split(
-      str_extract(ValidConnection, "(?<=overlaps potential promoter:)[^;]+"),
-      "\\|"
-    ))))
-  } else {
-    list(NA_character_)
-  }) %>%
-  ungroup()
+# IF "abc_tss_overlap" "gencode_promoter_overlap" or "TSS_control_gene" are non-empty (meaning the element overlaps with a promoter in abc or gencode OR is labelled as a TSS control gene)
+  # DistalPromoter-Gene
+    # filter out if "measuredGene_in_abc_tss", "measuredGene_in_gencode_promoter", OR "measuredGene_in_TSS_control"
+  # selfPromoter
+    # use if "measuredGene_in_abc_tss", "measuredGene_in_gencode_promoter", OR "measuredGene_in_TSS_control"
 
-# For each target that is overlapping a promoter or has TSS targeting guide(s), let's define a DistalPromoter_Gene column for when that target is tested against a gene that it isn't overlapping
-# We prioritize the results returned by "overlaps potential promoter" for deciding if it's selfPromoter or DistalPromoter_Gene. See edge cases for when these don't align: https://docs.google.com/presentation/d/10NFOre0GwunuMbL625IgyWAsmY2uE3rBhf7SY4LbRZM/edit?usp=sharing
-# There's only one instance (if we prioritize "overlap") where we have to manually change DistalPromoter_Gene to selfPromoter: name == "FAM83A|chr8:124192121-124192621:."
+# Category: `DistalPromoter-Gene`
+# Elements that overlap promoters (in ABC, GENCODE, or TSS controls) but not the measured gene's promoter
 combined_joined_w_categories <- combined_joined_w_categories %>%
-  # Create a helper column that picks the promoter type
-  mutate(
-    promoter_type = case_when(
-      str_detect(ValidConnection, "overlaps potential promoter:") ~ "overlap",
-      str_detect(ValidConnection, "TSS targeting") ~ "tss",
-      TRUE ~ "none"
-    ),
-    # When both conditions are present, use "overlap" as the primary deciding factor
-    promoter_type = if_else(
-      str_detect(ValidConnection, "overlaps potential promoter:") & str_detect(ValidConnection, "TSS targeting"),
-      "overlap",
-      promoter_type
-    )
-  ) %>%
-  mutate(
-    selfPromoter = case_when(
-      promoter_type == "overlap" ~ map2_lgl(measuredGeneSymbol, PromoterGeneList, ~ .x %in% .y),
-      promoter_type == "tss" ~ (measuredGeneSymbol == TSS_control_gene),
-      TRUE ~ FALSE
-    ),
-    DistalPromoter_Gene = case_when(
-      promoter_type == "overlap" ~ map2_lgl(measuredGeneSymbol, PromoterGeneList, ~ !(.x %in% .y)),
-      promoter_type == "tss" ~ (measuredGeneSymbol != TSS_control_gene),
-      TRUE ~ FALSE
-    )
-  ) %>%
-  # Change that one value: for the specific FAM83A target, set DistalPromoter_Gene to FALSE and selfPromoter to TRUE.
-  mutate(
-    DistalPromoter_Gene = if_else(name == "FAM83A|chr8:124192121-124192621:.", FALSE, DistalPromoter_Gene),
-    selfPromoter = if_else(name == "FAM83A|chr8:124192121-124192621:.", TRUE, selfPromoter)
-  )
+  mutate(DistalPromoter_Gene = 
+           ifelse(
+             distal_or_promoter == "promoter" & !measuredGene_in_abc_tss & !measuredGene_in_gencode_promoter & !measuredGene_in_TSS_control, TRUE, FALSE
+           )
+        )
+
+# Category: `selfPromoter`
+# Elements that overlap the measured gene's own promoter
+combined_joined_w_categories <- combined_joined_w_categories %>%
+  mutate(selfPromoter = 
+           ifelse(
+             measuredGene_in_abc_tss | measuredGene_in_gencode_promoter | measuredGene_in_TSS_control, 
+             TRUE, FALSE
+           )
+        )
+
+# Positive Control DistalElement-Gene
+  # If the target_type == "DE" AND the intended positive control gene == the measuredGeneSymbol
 
 # Category: `Positive Control DistalElement-Gene`
+# Distal elements designed as positive controls paired with their intended target genes
 combined_joined_w_categories <- combined_joined_w_categories %>%
-  mutate(Positive_Control_DistalElement_Gene = ifelse(target_type == "DE" & de_assigned_gene == measuredGeneSymbol, TRUE, FALSE))
+  mutate(Positive_Control_DistalElement_Gene = 
+           ifelse(
+             target_type == "DE" & measuredGeneSymbol == de_assigned_gene & DistalElement_Gene, 
+             TRUE, FALSE
+           )
+  )
+
+# Random DistalElement-Gene
+  # If the target_type == "enh" AND "DistalElement-Gene" == TRUE
 
 # Category: `Random DistalElement-Gene`
-# For the random set, we can define that as every pair where targets are from the random 2Mb loci (except that one instance of NANOG DE pos control being within a 2Mb region in wtc11)
-# This should just be all "enh"
+# Random enhancers that are distal elements (not promoters)
 combined_joined_w_categories <- combined_joined_w_categories %>%
-  mutate(Random_DistalElement_Gene = ifelse(target_type == "enh" & DistalElement_Gene == TRUE, TRUE, FALSE))
+  mutate(Random_DistalElement_Gene = 
+           ifelse(
+             target_type == "enh" & DistalElement_Gene == TRUE, 
+             TRUE, FALSE
+           )
+  )
+
+# Random Validation DistalElement-Gene
+  # If Random DistalElement-Gene == TRUE AND element-gene pair is NOT in the training dataset
 
 # Category: `Random Validation DistalElement-Gene`
-# Random element pairs that are also DistalElement pairs
+# Random distal elements that are not in the training dataset
 # Create GRanges objects for overlap detection (without merging)
 random_gr <- combined_joined_w_categories %>%
   mutate(random_pair_id = row_number()) %>%
@@ -303,7 +537,7 @@ get_significant_pair_stats <- function(df, category) {
 get_nonsignificant_pair_stats <- function(df, category) {
   df %>%
     filter(!!sym(category), Significant == F) %>%
-    mutate(Underpowered = str_detect(ValidConnection, "< 80% power at 15% effect size")) %>%
+    mutate(Underpowered = ifelse(str_detect(ValidConnection, "< 80% power at 15% effect size"), TRUE, FALSE)) %>%
     select(Significant, Underpowered) %>%
     table()
 }
@@ -444,7 +678,7 @@ igvf_formatted_file <- combined_joined_w_categories_fixed %>%
     sceptre_adj_p_value = as.numeric(pValueAdjusted),
     significant = as.logical(Significant),
     sample_term_name = as.character(ExperimentCellType),
-    sample_term_id = as.character(NA_character_),
+    sample_term_id = ifelse(ExperimentCellType == "K562", "EFO:0002067", "EFO:0009747"),
     sample_summary_short = as.character(ExperimentCellType),
     power_at_effect_size_10 = as.numeric(PowerAtEffectSize10),
     power_at_effect_size_15 = as.numeric(PowerAtEffectSize15),
@@ -466,30 +700,110 @@ summarized_categories <- igvf_formatted_file %>%
     by = c("targeting_chr" = "chrom", "targeting_start" = "chromStart", "targeting_end" = "chromEnd", 
            "gene_symbol" = "measuredGeneSymbol", "sample_term_name" = "CellType")
   ) %>%
+  select(-sample_term_id, -sample_summary_short, -notes) %>%
   left_join(
     combined_joined_w_categories_fixed %>%
       select(chrom, chromStart, chromEnd, measuredGeneSymbol, ExperimentCellType, 
-             hg19_target_coords, EffectSize, chrTSS, startTSS, endTSS, hg19_target_chr, hg19_target_start, 
-             hg19_target_end, target_name, DistalElement_Gene, selfPromoter, DistalPromoter_Gene, ValidConnection, 
-             Positive_Control_DistalElement_Gene, Random_DistalElement_Gene, Random_Validation_DistalElement_Gene),
+             hg19_target_coords, EffectSize, chrTSS, startTSS, endTSS, distance_to_abc_canonical_TSS, hg19_target_chr, hg19_target_start, 
+             hg19_target_end, target_name, distal_or_promoter, DistalElement_Gene, selfPromoter, DistalPromoter_Gene, TSS_control_gene,
+             Positive_Control_DistalElement_Gene, Random_DistalElement_Gene, Random_Validation_DistalElement_Gene, de_assigned_gene,
+             protein_coding_gene_body_overlap, gencode_promoter_overlap, abc_tss_overlap),
     by = c("targeting_chr" = "chrom", "targeting_start" = "chromStart", "targeting_end" = "chromEnd", 
            "gene_symbol" = "measuredGeneSymbol", "sample_term_name" = "ExperimentCellType")
   ) %>%
+  mutate(pctEffectSize = EffectSize * 100) %>%
   dplyr::rename(
     intended_target_name_hg38 = intended_target_name,
     targeting_chr_hg38 = targeting_chr,
     targeting_start_hg38 = targeting_start,
     targeting_end_hg38 = targeting_end,
     intended_target_name_hg19 = hg19_target_coords,
-    log2FC_EffectSize = sceptre_log2_fc,
-    pctChange_EffectSize = EffectSize,
+    log_2_FC_effect_size = sceptre_log2_fc,
+    pct_change_effect_size = pctEffectSize,
     chrTSS_hg38 = chrTSS,
     startTSS_hg38 = startTSS,
     endTSS_hg38 = endTSS,
     targeting_chr_hg19 = hg19_target_chr,
     targeting_start_hg19 = hg19_target_start,
     targeting_end_hg19 = hg19_target_end,
-    design_file_target_name = target_name
+    design_file_target_name = target_name,
+    distance_to_gencode_gene_TSS = distToTSS,
+    element_location = distal_or_promoter,
+    intended_positive_control_distal_element_target_gene = de_assigned_gene,
+    intended_positive_control_target_gene = TSS_control_gene,
+    cell_type = sample_term_name,
+    gencode_protein_coding_gene_body_overlap = protein_coding_gene_body_overlap,
+    design_file_type = type
+  ) %>%
+  mutate(
+    element_gene_pair_identifier_hg38 = paste0(gene_symbol, "|", intended_target_name_hg38),
+    element_gene_pair_identifier_hg19 = paste0(gene_symbol, "|", intended_target_name_hg19)
+  ) %>%
+  select(
+    # HG38 target coordinates
+    intended_target_name_hg38, 
+    targeting_chr_hg38, 
+    targeting_start_hg38, 
+    targeting_end_hg38,
+    
+    # HG19 target coordinates
+    intended_target_name_hg19, 
+    targeting_chr_hg19, 
+    targeting_start_hg19, 
+    targeting_end_hg19,
+    
+    # Target names
+    element_gene_pair_identifier_hg38,
+    element_gene_pair_identifier_hg19,
+    
+    # Gene and cell type information
+    gene_symbol, 
+    gene_id, 
+    cell_type,
+    
+    # Effect size and statistical measures
+    log_2_FC_effect_size, 
+    pct_change_effect_size, 
+    sceptre_p_value, 
+    sceptre_adj_p_value, 
+    significant,
+    
+    # Distance to TSS
+    distance_to_gencode_gene_TSS, 
+    distance_to_abc_canonical_TSS,
+    
+    # TSS coordinates HG38
+    chrTSS_hg38, 
+    startTSS_hg38, 
+    endTSS_hg38,
+    
+    # Element feature overlap
+    element_location,
+    gencode_promoter_overlap, 
+    abc_tss_overlap,
+    gencode_protein_coding_gene_body_overlap,
+    
+    # Element-Gene category
+    DistalElement_Gene, 
+    DistalPromoter_Gene, 
+    selfPromoter, 
+    Positive_Control_DistalElement_Gene, 
+    Random_DistalElement_Gene, 
+    Random_Validation_DistalElement_Gene,
+    
+    # Power Simulation Results
+    power_at_effect_size_10, 
+    power_at_effect_size_15, 
+    power_at_effect_size_20, 
+    power_at_effect_size_25, 
+    power_at_effect_size_50,
+    
+    # Screen Design Information
+    intended_positive_control_distal_element_target_gene, 
+    intended_positive_control_target_gene,
+    design_file_target_name, 
+    design_file_type, 
+    `guide_id(s)`
   )
 
 

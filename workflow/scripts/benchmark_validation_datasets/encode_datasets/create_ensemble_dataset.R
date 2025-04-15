@@ -75,7 +75,6 @@ crispr_data <- bind_rows(crispr_data, .id = "Dataset")
 
 # filter all datasets for valid connections
 crispr_data <- crispr_data %>% 
-  # filter(ValidConnection == "TRUE") %>% 
   arrange(chrom, chromStart, chromEnd, measuredGeneSymbol)
 
 ## Combine CRISPR datasets -------------------------------------------------------------------------

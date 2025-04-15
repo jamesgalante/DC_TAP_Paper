@@ -93,8 +93,7 @@ rule filter_crispr_dataset:
   input: "results/benchmark_validation_datasets/create_encode_output/ENCODE/ENCODE_{sample}_{sd}gStd_{method}_{strategy}_{genome}.tsv.gz"
   output: temp("results/benchmark_validation_datasets/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_{sample}_{sd}gStd_{method}_{strategy}_{pwr}pwrAt{es}effect_{genome}.tsv.gz")
   params:
-    tss_to_dist = config["benchmark_validation_datasets"]["create_encode_output"]["encode_datasets"]["dist_to_TSS"],
-    remove_filtered_pairs = False
+    tss_to_dist = config["benchmark_validation_datasets"]["create_encode_output"]["encode_datasets"]["dist_to_TSS"]
   conda: "../../envs/r_process_crispr_data.yml"
   script:
     "../../scripts/benchmark_validation_datasets/encode_datasets/filter_crispr_dataset.R"
