@@ -23,33 +23,27 @@ suppressPackageStartupMessages({
 })
 
 message("Loading input files")
-k562_discovery_results <- readRDS(snakemake@input$discovery_results[[1]])
-wtc11_discovery_results <- readRDS(snakemake@input$discovery_results[[2]])
+Formatted_DC_TAP_Seq_Results_w_Categories <- read_tsv(snakemake@input$Formatted_DC_TAP_Seq_Results_w_Categories)
 
-k562_final_sceptre_object <- readRDS(snakemake@input$final_sceptre_object[[1]])
-wtc11_final_sceptre_object <- readRDS(snakemake@input$final_sceptre_object[[2]])
-
-k562_distances <- read_tsv(snakemake@input$distances[[1]])
-wtc11_distances <- read_tsv(snakemake@input$distances[[2]])
+# Filter for Random_DistalElement_Gene
+Formatted_DC_TAP_Seq_Results_w_Categories <- Formatted_DC_TAP_Seq_Results_w_Categories %>% 
+  filter(Random_DistalElement_Gene)
 
 
 ###  Doing Thing =========================================================
 
 # Function to create and save plot for each reference
-plot_distance_by_es <- function(discovery_results, distances, cell_type) {
+plot_distance_by_es <- function(df, cell_type_to_plot) {
   
-  # Combine the discovery_results and distances file 
-  merged <- distances %>% inner_join(discovery_results, by = c("response_id", "grna_group" = "grna_target"))
+  # Filter the table for the cell type
+  df <- df %>% 
+    filter(cell_type == cell_type_to_plot)
   
   # Convert the log_2_fold_change to log_10_fold_change
-  merged <- merged %>%
-    mutate(fold_change = 2^log_2_fold_change,
-           percent_change = (fold_change - 1) * 100,  # Calculate percent change
-           distance = abs(distance)) %>%             # Use absolute distance
-    mutate(distance = abs(distance)) %>% # Make the distance the absolute value of the distance from gene
+  df <- df %>%
+    mutate(percent_change = pct_change_effect_size,
+           distance = abs(distance_to_gencode_gene_TSS)) %>%             # Use absolute distance
     arrange(significant) %>% # Order by significance so these points appear on top of the insignificant points
-    filter(!is.na(significant)) %>% # Remove any NA significant points
-    filter(target_type == "enh") %>% # Filter for only "enh"
     mutate(effect_color = case_when(
       significant == TRUE & percent_change > 0 ~ "Positive",
       significant == TRUE & percent_change < 0 ~ "Negative",
@@ -57,14 +51,14 @@ plot_distance_by_es <- function(discovery_results, distances, cell_type) {
     ))
   
   # Create the plot
-  p <- ggplot(merged, aes(x = distance / 1e6, y = percent_change, color = effect_color)) +
+  p <- ggplot(df, aes(x = distance / 1e6, y = percent_change, color = effect_color)) +
     geom_point() +
     geom_hline(yintercept = 0, linetype = "dashed", color = "black") +  # Dotted line at y = 0
     scale_color_manual(values = c("Positive" = "blue", "Negative" = "red", "Non-significant" = "grey"),
                        labels = c("Positive" = "Pos.", "Negative" = "Neg.", "Non-significant" = "Non-sig")) +
     ylim(-100, 100) +
     labs(title = "Distance by Effect Size",
-         subtitle = paste0(cell_type, " discovery pairs"),
+         subtitle = paste0(cell_type_to_plot, " discovery pairs"),
          x = "Distance to TSS (Mb)", 
          y = "CRISPRi effect size \n(% change)", 
          color = "CRISPR") +
@@ -83,8 +77,8 @@ plot_distance_by_es <- function(discovery_results, distances, cell_type) {
 }
 
 # Create the plots
-p1 <- plot_distance_by_es(k562_discovery_results, k562_distances, "K562")
-p2 <- plot_distance_by_es(wtc11_discovery_results, wtc11_distances, "WTC11")
+p1 <- plot_distance_by_es(Formatted_DC_TAP_Seq_Results_w_Categories, "K562")
+p2 <- plot_distance_by_es(Formatted_DC_TAP_Seq_Results_w_Categories, "WTC11")
 
 
 ### SAVE OUTPUT ===============================================================

@@ -49,21 +49,26 @@ dim(create_ensemble_encode_output %>% filter(Dataset == "K562_DC_TAP_Seq"))
 dim(create_ensemble_epbenchmarking_output %>% filter(Dataset == "K562_DC_TAP_Seq"))
 
 # > dim(discovery_pairs[[1]])
-# [1] 7556    2
+# [1] 7533    2
 # > dim(diffex_output[[1]])
-# [1] 7556    8
-# > dim(power_analysis_output[[1]]) 
-# [1] 7516   24
+# [1] 7533    8
+# > dim(power_analysis_output[[1]])
+# [1] 7493   24
 # > dim(create_encode_dataset_output[[1]])
-# [1] 7516   31
+# [1] 7493   31
 # > dim(liftover_output[[1]])
-# [1] 7498   31
+# [1] 7475   31
 # > dim(filter_crispr_dataset_output[[1]])
-# [1] 7498   31
+# [1] 7475   31
 # > dim(create_ensemble_encode_output %>% filter(Dataset == "K562_DC_TAP_Seq"))
-# [1] 7498   30
+# [1] 7475   30
 # > dim(create_ensemble_epbenchmarking_output %>% filter(Dataset == "K562_DC_TAP_Seq"))
-# [1] 7498   21
+# [1] 7475   21
+# > dim(final_formatted)
+# [1] 7475   50
+
+# All these 7475 pairs should be in the 7533 pairs in discovery pairs
+
 
 dim(discovery_pairs[[2]])
 dim(diffex_output[[2]])

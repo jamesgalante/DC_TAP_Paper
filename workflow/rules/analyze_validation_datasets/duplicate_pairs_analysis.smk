@@ -93,7 +93,7 @@ rule compare_gasperini_Sceptre_and_MAST:
 rule find_duplicate_pairs:
   input:
     gasperini_MAST_and_Sceptre = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_analysis/gasperini_MAST_and_Sceptre.rds",
-    combined_validation = "results/analyze_validation_datasets/process_bam_files_and_combined_w_EG_results/expt_pred_merged_annot/combined_validation_expt_pred_merged_annot.txt",
+    combined_validation = "results/benchmark_validation_datasets/crispr_benchmarking/expt_pred_merged_annot/validation_expt_pred_merged_annot.txt.gz",
     gasperini_sceptre_results_w_symbol = "results/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_sceptre_analysis/gasperini_sceptre_results_w_symbol.rds",
     perturb_sce = "resources/analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/perturb_sce.rds",
     dc_tap_guide_targets = "results/process_validation_datasets/K562_DC_TAP_Seq/guide_targets.tsv",

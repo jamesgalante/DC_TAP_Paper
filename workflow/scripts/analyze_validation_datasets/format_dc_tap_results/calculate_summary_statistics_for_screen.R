@@ -494,7 +494,7 @@ combined_joined_w_categories <- combined_joined_w_categories %>%
 # Create GRanges objects for overlap detection (without merging)
 random_gr <- combined_joined_w_categories %>%
   mutate(random_pair_id = row_number()) %>%
-  filter(ExperimentCellType == "K562", Random_DistalElement_Gene == TRUE) %>%
+  filter(ExperimentCellType == "K562", DistalElement_Gene == TRUE) %>%
   { GRanges(
     seqnames = paste0(.$chrom, ":", .$measuredGeneSymbol),
     ranges = IRanges(start = .$chromStart, end = .$chromEnd),
@@ -517,125 +517,11 @@ matching_overlap_ids <- random_gr$random_pair_id[queryHits(ovl_hits)]
 # Mark as TRUE for those NOT overlapping training (i.e. valid for Random Validation)
 combined_joined_w_categories <- combined_joined_w_categories %>%
   mutate(random_pair_id = row_number()) %>%
-  mutate(Random_Validation_DistalElement_Gene = case_when(
+  mutate(Validation_DistalElement_Gene = case_when(
     ExperimentCellType == "K562" ~ random_pair_id %in% setdiff(random_gr$random_pair_id, matching_overlap_ids),
-    ExperimentCellType == "WTC11" ~ Random_DistalElement_Gene
+    ExperimentCellType == "WTC11" ~ DistalElement_Gene
   )) %>%
   select(-random_pair_id)
-
-
-### CALCULATE SUMMARY STATISTICS ==============================================
-
-# For each category, calculate the number of Significant pairs (upregulated v. downregulated) - calculate the the number of Non-significant pairs (high power v. underpowered)
-get_significant_pair_stats <- function(df, category) {
-  df %>%
-    filter(!!sym(category), Significant == T) %>%
-    mutate(Downregulated = EffectSize < 0) %>%
-    select(Significant, Downregulated) %>%
-    table()
-}
-get_nonsignificant_pair_stats <- function(df, category) {
-  df %>%
-    filter(!!sym(category), Significant == F) %>%
-    mutate(Underpowered = ifelse(str_detect(ValidConnection, "< 80% power at 15% effect size"), TRUE, FALSE)) %>%
-    select(Significant, Underpowered) %>%
-    table()
-}
-
-# List of categories to summarize
-categories <- c(
-  "DistalElement_Gene",
-  "selfPromoter",
-  "DistalPromoter_Gene",
-  "Positive_Control_DistalElement_Gene",
-  "Random_DistalElement_Gene",
-  "Random_Validation_DistalElement_Gene"
-)
-
-# Function to build summary table for a given cell type
-get_summary_table_by_celltype <- function(cell_type) {
-  df_cell <- combined_joined_w_categories %>% filter(ExperimentCellType == cell_type)
-  
-  map_dfr(categories, function(cat) {
-    sig_tbl <- get_significant_pair_stats(df_cell, cat)
-    nonsig_tbl <- get_nonsignificant_pair_stats(df_cell, cat)
-    
-    # Safely retrieve table values or 0 if not present
-    downreg_false <- if ("TRUE" %in% rownames(sig_tbl) && "FALSE" %in% colnames(sig_tbl)) {
-      sig_tbl["TRUE", "FALSE"]
-    } else 0
-    
-    downreg_true <- if ("TRUE" %in% rownames(sig_tbl) && "TRUE" %in% colnames(sig_tbl)) {
-      sig_tbl["TRUE", "TRUE"]
-    } else 0
-    
-    underpowered_false <- if ("FALSE" %in% rownames(nonsig_tbl) && "FALSE" %in% colnames(nonsig_tbl)) {
-      nonsig_tbl["FALSE", "FALSE"]
-    } else 0
-    
-    underpowered_true <- if ("FALSE" %in% rownames(nonsig_tbl) && "TRUE" %in% colnames(nonsig_tbl)) {
-      nonsig_tbl["FALSE", "TRUE"]
-    } else 0
-    
-    tibble(
-      Category = cat,
-      Upregulated = downreg_false,
-      Downregulated = downreg_true,
-      WellPowered = underpowered_false,
-      UnderPowered = underpowered_true
-    )
-  }) %>% mutate(ExperimentCellType = cell_type)
-}
-
-# Generate summary tables for each cell type
-summary_K562 <- get_summary_table_by_celltype("K562")
-summary_WTC11 <- get_summary_table_by_celltype("WTC11")
-
-# Print the summary tables
-cat("Summary table for K562:\n")
-print(summary_K562)
-
-cat("\nSummary table for WTC11:\n")
-print(summary_WTC11)
-
-
-### REMOVE UNDERPOWERED PAIRS =================================================
-
-# We wanted to get the statistics on how many pairs are underpowered, but we don't want this in the final table
-# Modify the categories to remove underpowered nonsignificant pairs
-combined_joined_w_categories_fixed <- combined_joined_w_categories %>%
-  mutate(
-    DistalElement_Gene = case_when(
-      Significant == FALSE & 
-        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
-      TRUE ~ DistalElement_Gene
-    ),
-    selfPromoter = case_when(
-      Significant == FALSE & 
-        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
-      TRUE ~ selfPromoter
-    ),
-    DistalPromoter_Gene = case_when(
-      Significant == FALSE & 
-        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
-      TRUE ~ DistalPromoter_Gene
-    ),
-    Positive_Control_DistalElement_Gene = case_when(
-      Significant == FALSE & 
-        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
-      TRUE ~ Positive_Control_DistalElement_Gene
-    ),
-    Random_DistalElement_Gene = case_when(
-      Significant == FALSE & 
-        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
-      TRUE ~ Random_DistalElement_Gene
-    ),
-    Random_Validation_DistalElement_Gene = case_when(
-      Significant == FALSE & 
-        str_detect(ValidConnection, "< 80% power at 15% effect size") ~ FALSE,
-      TRUE ~ Random_Validation_DistalElement_Gene
-    )
-  )
 
 
 ### CREATE SUMMARIZED COMBINED JOINED W CATEGORIES ============================
@@ -655,7 +541,7 @@ target_names_w_guides <- rbind(
 )
 
 # Create IGVF formatted file
-igvf_formatted_file <- combined_joined_w_categories_fixed %>%
+igvf_formatted_file <- combined_joined_w_categories %>%
   left_join(
     create_ensemble_encode_input %>% 
       select(chrom, chromStart, chromEnd, measuredGeneSymbol, Reference, measuredEnsemblID, pValue), 
@@ -702,11 +588,11 @@ summarized_categories <- igvf_formatted_file %>%
   ) %>%
   select(-sample_term_id, -sample_summary_short, -notes) %>%
   left_join(
-    combined_joined_w_categories_fixed %>%
+    combined_joined_w_categories %>%
       select(chrom, chromStart, chromEnd, measuredGeneSymbol, ExperimentCellType, 
              hg19_target_coords, EffectSize, chrTSS, startTSS, endTSS, distance_to_abc_canonical_TSS, hg19_target_chr, hg19_target_start, 
              hg19_target_end, target_name, distal_or_promoter, DistalElement_Gene, selfPromoter, DistalPromoter_Gene, TSS_control_gene,
-             Positive_Control_DistalElement_Gene, Random_DistalElement_Gene, Random_Validation_DistalElement_Gene, de_assigned_gene,
+             Positive_Control_DistalElement_Gene, Random_DistalElement_Gene, Validation_DistalElement_Gene, de_assigned_gene,
              protein_coding_gene_body_overlap, gencode_promoter_overlap, abc_tss_overlap),
     by = c("targeting_chr" = "chrom", "targeting_start" = "chromStart", "targeting_end" = "chromEnd", 
            "gene_symbol" = "measuredGeneSymbol", "sample_term_name" = "ExperimentCellType")
@@ -737,7 +623,8 @@ summarized_categories <- igvf_formatted_file %>%
   ) %>%
   mutate(
     element_gene_pair_identifier_hg38 = paste0(gene_symbol, "|", intended_target_name_hg38),
-    element_gene_pair_identifier_hg19 = paste0(gene_symbol, "|", intended_target_name_hg19)
+    element_gene_pair_identifier_hg19 = paste0(gene_symbol, "|", intended_target_name_hg19),
+    Validation_DistalElement_Gene = ifelse(abs(distance_to_gencode_gene_TSS) < 1e6 & Validation_DistalElement_Gene == TRUE, TRUE, FALSE) # Restrict the validation dataset to <1Mb
   ) %>%
   select(
     # HG38 target coordinates
@@ -789,7 +676,7 @@ summarized_categories <- igvf_formatted_file %>%
     selfPromoter, 
     Positive_Control_DistalElement_Gene, 
     Random_DistalElement_Gene, 
-    Random_Validation_DistalElement_Gene,
+    Validation_DistalElement_Gene,
     
     # Power Simulation Results
     power_at_effect_size_10, 
@@ -811,11 +698,9 @@ summarized_categories <- igvf_formatted_file %>%
 
 # Save output files
 message("Saving output files")
-write_tsv(combined_joined_w_categories_fixed, snakemake@output$combined_joined_w_categories)
+write_tsv(combined_joined_w_categories, snakemake@output$combined_joined_w_categories)
 write_tsv(summarized_categories, snakemake@output$summarized_categories)
 write_tsv(igvf_formatted_file, snakemake@output$igvf_formatted_file)
-write_tsv(summary_K562, snakemake@output$summary_K562)
-write_tsv(summary_WTC11, snakemake@output$summary_WTC11)
 
 
 ### CLEAN UP ==================================================================

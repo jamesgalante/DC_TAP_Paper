@@ -5,7 +5,7 @@
 # Saving image for debugging
 save.image(paste0("RDA_objects/power_simulation_plots.rda"))
 message("Saved Image")
-stop("Manually Stopped Program after Saving Image")
+# stop("Manually Stopped Program after Saving Image")
 
 # Open log file to collect messages, warnings, and errors
 log_filename <- snakemake@log[[1]]
@@ -28,7 +28,7 @@ k562_power_output <- read_tsv(snakemake@input$k562_power_output)
 wtc11_power_output <- read_tsv(snakemake@input$wtc11_power_output)
 gasperini_power_output <- read_tsv(snakemake@input$gasperini_power_output)
 k562_tpm_file <- read_tsv(snakemake@input$k562_tpm_file)
-annot <- import(snakemake@input$annot)
+annot <-import(snakemake@input$annot)
 
 # Process annot file to get gene name conversions
 annot <- annot[annot$type == "gene"]
@@ -75,13 +75,29 @@ calculate_power_summary <- function(data, cell_type) {
     )
 }
 
+# Calculate power summary for gasperini
+gasperini_summary <- calculate_power_summary(gasperini_power_output %>%
+                          filter(!is.na(power_effect_size_10)) %>%
+                          filter(!is.na(power_effect_size_15)) %>%
+                          filter(!is.na(power_effect_size_50)) %>%
+                          dplyr::rename(
+                            PowerAtEffectSize10 = power_effect_size_10,
+                            PowerAtEffectSize15 = power_effect_size_15,
+                            PowerAtEffectSize20 = power_effect_size_20,
+                            PowerAtEffectSize25 = power_effect_size_25,
+                            PowerAtEffectSize50 = power_effect_size_50
+                          ), "Gasperini")
+
 # Calculate power summary for both cell types
 k562_summary <- calculate_power_summary(k562_power_output, "K562")
 wtc11_summary <- calculate_power_summary(wtc11_power_output, "WTC11")
 
-# Combine data for plotting
-combined_summary <- bind_rows(k562_summary, wtc11_summary) %>%
-  mutate(cell_type = factor(cell_type, levels = c("K562", "WTC11")))
+# Update combined data to include Gasperini
+combined_summary <- bind_rows(k562_summary, wtc11_summary, gasperini_summary) %>%
+  mutate(cell_type = factor(cell_type, levels = c("K562", "WTC11", "Gasperini")))
+
+# Update color scheme to include Gasperini
+cell_colors <- c("K562" = "firebrick", "WTC11" = "darkblue", "Gasperini" = "darkgreen")
 
 # Define common theme elements
 common_theme <- theme_classic() +
@@ -93,9 +109,6 @@ common_theme <- theme_classic() +
     axis.text = element_text(size = 9),
     aspect.ratio = 1
   )
-
-# Define common color scheme
-cell_colors <- c("K562" = "firebrick", "WTC11" = "darkblue")
 
 # Create the bar plot with grouped bars
 bar_plot <- ggplot(combined_summary, 

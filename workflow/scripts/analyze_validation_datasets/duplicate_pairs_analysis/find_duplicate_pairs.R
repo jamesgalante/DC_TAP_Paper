@@ -26,7 +26,7 @@ suppressPackageStartupMessages({
 
 message("Loading input files")
 gasperini_MAST_and_Sceptre <- readRDS(snakemake@input$gasperini_MAST_and_Sceptre)
-combined_validation <- read_tsv(snakemake@input$combined_validation) %>% filter(category == "K562 DC TAP Seq")
+combined_validation <- read_tsv(snakemake@input$combined_validation) %>% filter(Reference == "K562_DC_TAP_Seq") %>% filter(pred_id == "ENCODE_rE2G")
 gasperini_sceptre_results_w_symbol <- readRDS(snakemake@input$gasperini_sceptre_results_w_symbol)
 
 # Load for getting guide information
@@ -159,33 +159,6 @@ comparing_all_duplicate_pairs <- duplicates %>%
 ggsave(plot = comparing_all_duplicate_pairs,
        filename = snakemake@output$comparing_all_duplicate_pairs,
        device = "pdf", height = 3, width = 3)
-
-
-# When we filter for ValidConnection == TRUE, we find the correlation is a lot better
-comparing_valid_duplicate_pairs <- duplicates %>%
-  filter(dc_tap.ValidConnection == TRUE) %>%
-  ggplot(aes(y = dc_tap.EffectSize * 100, x = training.Sceptre_pctChange)) +
-  geom_point(size = 0.8) +
-  geom_abline(slope = 1, intercept = 0, color = "black", linetype = "dashed") +
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(
-    title = "Comparing Duplicate Pairs",
-    subtitle = "DC TAP ENCODE filtered",
-    y = "K562 DC TAP Seq Effect Size (%)",
-    x = "Gasperini et al. 2019 Effect Size (%)"
-  ) +
-  theme_bw() +
-  ylim(-50, 20) +
-  xlim(-50, 20) +
-  scale_color_brewer(palette = "Set1") +
-  theme(
-    aspect.ratio = 1,
-    panel.grid.minor = element_blank()
-  )
-ggsave(plot = comparing_valid_duplicate_pairs,
-       filename = snakemake@output$comparing_valid_duplicate_pairs,
-       device = "pdf", height = 3, width = 3)
-
 
 # If we look further into some of the points that drop out after filtering for ValidConnection == TRUE, we find disparities between DC TAP and Gapserini
 comparing_all_duplicate_pairs_with_color <- duplicates %>%
@@ -363,8 +336,10 @@ final_duplicate_pairs_plot <- duplicates %>%
   # Apply ValidConnection filter
   # filter(dc_tap.ValidConnection == TRUE) %>%
   # Only keep points where both are significant or both not significant
-  filter((dc_tap.Regulated == TRUE & training.Regulated == TRUE) | 
+  
+  filter((dc_tap.Regulated == TRUE & training.Regulated == TRUE) |
            (dc_tap.Regulated == FALSE & training.Regulated == FALSE)) %>%
+  
   # Create color coding
   mutate(significance = if_else(dc_tap.Regulated == TRUE & training.Regulated == TRUE, 
                                 "Both", "Neither")) %>%
@@ -373,7 +348,9 @@ final_duplicate_pairs_plot <- duplicates %>%
     data <- .
     
     # Calculate r value only for significant points
+    
     sig_points <- data %>% filter(significance == "Both")
+    
     if(nrow(sig_points) > 1) {
       r_value <- cor(sig_points$dc_tap.EffectSize * 100, 
                      sig_points$training.Sceptre_pctChange, 

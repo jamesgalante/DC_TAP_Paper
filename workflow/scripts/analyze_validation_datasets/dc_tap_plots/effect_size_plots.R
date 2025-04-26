@@ -22,14 +22,14 @@ suppressPackageStartupMessages(
 )
 
 message("Loading input files")
-experiment_summary_table <- read_tsv(snakemake@input$experiment_summary_table)
+Formatted_DC_TAP_Seq_Results_w_Categories <- read_tsv(snakemake@input$Formatted_DC_TAP_Seq_Results_w_Categories)
 
 
 ### MAKE PLOT =================================================================
 
-effect_size_boxplot <- experiment_summary_table %>%
-  filter(Random_DistalElement_Gene, Significant, EffectSize < 0) %>%
-  ggplot(aes(x = ExperimentCellType, y = EffectSize*100, fill = ExperimentCellType)) +
+effect_size_boxplot <- Formatted_DC_TAP_Seq_Results_w_Categories %>%
+  filter(Random_DistalElement_Gene, significant, pct_change_effect_size < 0) %>%
+  ggplot(aes(x = cell_type, y = pct_change_effect_size, fill = cell_type)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(width = 0.2, size = 0.9, alpha = 0.8) +
   labs(
