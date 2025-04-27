@@ -23,7 +23,7 @@ suppressPackageStartupMessages({
 })
 
 message("Loading input files")
-Formatted_DC_TAP_Seq_Results <- read_tsv(snakemake@input$Formatted_DC_TAP_Seq_Results)
+Formatted_DC_TAP_Seq_Results <- read_tsv(snakemake@input$results_with_element_gene_pair_categories_modified)
 
 
 ### RESIZE DC TAP ELEMENTS ====================================================
@@ -80,7 +80,7 @@ message("Resizing complete")
 
 # Save output files
 message("Saving output files")
-write_tsv(resized_Formatted_DC_TAP_Seq_Results, snakemake@output$resized_Formatted_DC_TAP_Seq_Results)
+write_tsv(resized_Formatted_DC_TAP_Seq_Results, snakemake@output$resized_input_for_chromatin_categorization_pipeline)
 
 
 ### CLEAN UP ==================================================================

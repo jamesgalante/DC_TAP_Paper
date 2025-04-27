@@ -16,5 +16,5 @@ include: "rules/formatting_dc_tap_results.smk"
 
 # Perform all analyses to output benchmarked datasets
 rule all:
-  input: "results/formatted_dc_tap_results/Formatted_DC_TAP_Seq_Results_w_Categories.tsv"
+  input: "results/formatted_dc_tap_results/Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements.tsv"
 

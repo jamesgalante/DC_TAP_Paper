@@ -1,4 +1,5 @@
 
+
 # Download the TSS bed file to add ABC promoter annotations
 rule download_TSS_500bp_bed_file:
   output: "results/genome_annotation_files/CollapsedGeneBounds.hg38.TSS500bp.bed"
@@ -7,18 +8,47 @@ rule download_TSS_500bp_bed_file:
   conda: "../envs/r_process_crispr_data.yml"
   shell:
     "wget -O {output} {params.url}"
-
+    
 # Rule to get numbers for the paper
-rule calculate_summary_statistics_for_screen:
+rule adding_design_file_information:
   input:
     combined_validation = "results/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_Combined_Validation_Datasets_GRCh38.tsv.gz",
     guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"]),
-    create_ensemble_encode_input = expand("results/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_{sample}_0.13gStd_Sceptre_perCRE_0.8pwrAt15effect_GRCh38.tsv.gz", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"]),
+  output:
+    results_with_design_file_features = "results/formatted_dc_tap_results/results_with_design_file_features.tsv"
+  log: "results/formatted_dc_tap_results/logs/adding_design_file_information.log"
+  conda:
+    "../envs/analyze_crispr_screen.yml"
+  resources:
+    mem = "32G",
+    time = "2:00:00"
+  script:
+    "../scripts/format_dc_tap_results/adding_design_file_information.R"
+    
+# Add more categories for understanding element overlap with different genomic features
+rule adding_genomic_feature_overlaps:
+  input:
+    results_with_design_file_features = "results/formatted_dc_tap_results/results_with_design_file_features.tsv",
     abc_canonical_tss = "results/genome_annotation_files/CollapsedGeneBounds.hg38.TSS500bp.bed"
   output:
-    combined_joined_w_categories = "results/formatted_dc_tap_results/combined_joined_w_categories.tsv",
-    summarized_categories = "results/formatted_dc_tap_results/summarized_categories.tsv",
-    igvf_formatted_file = "results/formatted_dc_tap_results/igvf_formatted_file.tsv"
+    results_with_design_file_and_genomic_feature_overlaps = "results/formatted_dc_tap_results/results_with_design_file_and_genomic_feature_overlaps.tsv"
+  log: "results/formatted_dc_tap_results/logs/adding_genomic_feature_overlaps.log"
+  conda:
+    "../envs/analyze_crispr_screen.yml"
+  resources:
+    mem = "32G",
+    time = "2:00:00"
+  script:
+    "../scripts/format_dc_tap_results/adding_genomic_feature_overlaps.R"
+    
+# Creating categories to define the Random Set, Promoters, Valid Distal Element Gene pairs, etc.
+rule adding_element_gene_pair_categories:
+  input:
+    results_with_design_file_and_genomic_feature_overlaps = "results/formatted_dc_tap_results/results_with_design_file_and_genomic_feature_overlaps.tsv",
+    guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"]),
+    create_ensemble_encode_input = expand("results/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_{sample}_0.13gStd_Sceptre_perCRE_0.8pwrAt15effect_GRCh38.tsv.gz", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
+  output:
+    results_with_element_gene_pair_categories = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories.tsv"
   log: "results/formatted_dc_tap_results/logs/calculate_summary_statistics_for_screen.log"
   conda:
     "../envs/analyze_crispr_screen.yml"
@@ -27,13 +57,13 @@ rule calculate_summary_statistics_for_screen:
     time = "2:00:00"
   script:
     "../scripts/format_dc_tap_results/calculate_summary_statistics_for_screen.R"
-    
+
 # Rule to deal with specific pairs
 rule modify_specific_pairs_in_final_file:
   input:
-    summarized_categories = "results/formatted_dc_tap_results/summarized_categories.tsv"
+    results_with_element_gene_pair_categories = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories.tsv"
   output:
-    Formatted_DC_TAP_Seq_Results = "results/formatted_dc_tap_results/Formatted_DC_TAP_Seq_Results.tsv",
+    results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv",
     summary_K562 = "results/formatted_dc_tap_results/summary_K562.tsv",
     summary_WTC11 = "results/formatted_dc_tap_results/summary_WTC11.tsv"
   log: "results/formatted_dc_tap_results/logs/modify_specific_pairs_in_final_file.log"
@@ -45,12 +75,12 @@ rule modify_specific_pairs_in_final_file:
   script:
     "../scripts/format_dc_tap_results/modify_specific_pairs_in_final_file.R"
     
-# Resize DC TAP elements for epigenetic categories overlap
-rule resize_dc_tap_elements:
+# Resize the elements to 500bp for compatibility with chromatin category overlap pipeline
+rule resize_dc_tap_elements_for_chromatin_categories:
   input:
-    Formatted_DC_TAP_Seq_Results = "results/formatted_dc_tap_results/Formatted_DC_TAP_Seq_Results.tsv"
+    results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv",
   output:
-    resized_Formatted_DC_TAP_Seq_Results = "results/formatted_dc_tap_results/resized_Formatted_DC_TAP_Seq_Results.tsv"
+    resized_input_for_chromatin_categorization_pipeline = "results/formatted_dc_tap_results/resized_input_for_chromatin_categorization_pipeline.tsv"
   log: "results/formatted_dc_tap_results/logs/resize_dc_tap_elements.log"
   conda:
     "../envs/analyze_crispr_screen.yml"
@@ -59,14 +89,14 @@ rule resize_dc_tap_elements:
     time = "2:00:00"
   script:
     "../scripts/format_dc_tap_results/resize_dc_tap_elements.R"
-
+  
 # Add Maya's epigenetic categories for each pair
-rule add_element_epigenetic_categories:
+rule add_element_chromatin_categories:
   input:
-    resized_Formatted_DC_TAP_Seq_Results = "results/formatted_dc_tap_results/resized_Formatted_DC_TAP_Seq_Results.tsv",
+    resized_input_for_chromatin_categorization_pipeline = "results/formatted_dc_tap_results/resized_input_for_chromatin_categorization_pipeline.tsv",
     categorized_data = "resources/formatting_dc_tap_results/all_DC_TAP.h3k27me3_quantile_50.ratio_quantile_35.h3k27ac_quantiles_60_90.WTC11_as_WTC11.tsv"
   output:
-    Formatted_DC_TAP_Seq_Results_w_Categories = "results/formatted_dc_tap_results/Formatted_DC_TAP_Seq_Results_w_Categories.tsv"
+    Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements = "results/formatted_dc_tap_results/Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements.tsv"
   log: "results/formatted_dc_tap_results/logs/add_element_epigenetic_categories.log"
   conda:
     "../envs/analyze_crispr_screen.yml"

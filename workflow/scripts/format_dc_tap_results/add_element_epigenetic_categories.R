@@ -22,7 +22,7 @@ suppressPackageStartupMessages(
 )
 
 message("Loading input files")
-resized_Formatted_DC_TAP_Seq_Results <- read_tsv(snakemake@input$resized_Formatted_DC_TAP_Seq_Results)
+resized_Formatted_DC_TAP_Seq_Results <- read_tsv(snakemake@input$resized_input_for_chromatin_categorization_pipeline)
 categorized_data <- read_tsv(snakemake@input$categorized_data)
 
 
@@ -44,7 +44,7 @@ Formatted_DC_TAP_Seq_Results_w_Categories <- resized_Formatted_DC_TAP_Seq_Result
 
 # Save output files
 message("Saving output files")
-write_tsv(Formatted_DC_TAP_Seq_Results_w_Categories, snakemake@output$Formatted_DC_TAP_Seq_Results_w_Categories)
+write_tsv(Formatted_DC_TAP_Seq_Results_w_Categories, snakemake@output$Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements)
 
 
 ### CLEAN UP ==================================================================
