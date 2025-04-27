@@ -1,0 +1,32 @@
+
+process_validation_datasets:
+  sceptre_setup:
+    negative_controls:
+      WTC11_DC_TAP_Seq: ["MEF2A", "ZNF532", "BTAF1", "SLC25A17", "EEF1D", "HNRNPUL1", "NAMPT", "TARDBP", "ODF2L", "STX16", "GPR18", "FEZF1", "MRPS12", "RPAIN", "PLPPR3", "YIPF2", "RNF138", "REPS1", "MDM2", "ESCO1", "SMAD4", "PMAIP1", "HERC4", "CARNMT1", "LARGE2", "AKIP1", "FEN1", "TMEM167A", "SUZ12", "GEMIN4", "LDOC1", "FAM122A", "PRPF40A", "S100A6", "ZNF43"]
+      K562_DC_TAP_Seq: ["DNM2", "WDR43", "MORN2", "TMEM54", "CCNB1IP1", "ATG3", "POM121", "RWDD4", "NUDT16L1", "FARSA", "NAA50", "RPP30", "GRPEL1", "TBRG4", "SMC3", "RAD50", "TPST2", "TMEM126A", "TUBB4B", "KIAA0907", "RHBDD2", "CALM1", "OXLD1", "CDC34", "CDC73", "AKIRIN1", "MAX", "MKI67", "ZDHHC4", "GALK1", "ECI1", "C8orf59", "NUP210", "ROMO1", "ATP1A1", "KIF20B", "TMEM69", "TNIP2", "RPUSD4", "ZKSCAN1", "MFSD12", "C1D", "NKTR", "NDUFA9", "SAV1", "POLR2H", "RDX", "PGAP2", "TBCB", "SNAPIN"]
+  differential_expression:
+    padj_threshold: 0.1
+  power_analysis:
+    n_batches: 100
+    n_reps: 100
+
+benchmark_validation_datasets:
+  download_urls:
+    gencode.v32lift37: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_32/GRCh37_mapping/gencode.v32lift37.annotation.gtf.gz"
+    gencode.v32: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_32/gencode.v32.annotation.gtf.gz"
+    liftover_chain: "https://hgdownload.cse.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz"
+    tss_bed: "https://raw.githubusercontent.com/broadinstitute/ABC-Enhancer-Gene-Prediction/refs/heads/main/reference/hg38/CollapsedGeneBounds.hg38.TSS500bp.bed" 
+  encode_datasets:
+    dist_to_TSS: [1000, 2e6]
+    genome_build:
+      K562_DC_TAP_Seq: "hg19"
+      WTC11_DC_TAP_Seq: "hg19"
+        
+# All post processing of validation datasets will go here
+analyze_validation_datasets:
+  duplicate_pairs_analysis:
+    download_gasperini_annotation_file:
+      annot: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/GRCh37_mapping/gencode.v26lift37.annotation.gtf.gz"
+                
+                
+                

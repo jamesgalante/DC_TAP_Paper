@@ -50,18 +50,6 @@ gene_gRNA_group_pairs <- gene_gRNA_group_pairs %>%
   dplyr::rename(grna_target = grna_group)
 
 
-### CHECK THE ERRORED GENE NAMES ==============================================
-
-# Some of the genes were negative controls, so we don't expect them to be within 2Mb of any target
-# Check which of the genes that don't get paired up with any target are/aren't a negative control
-
-negative_control_genes <- as.vector(snakemake@params$negative_control_genes)
-genes_paired_with_no_targets <- errors[[2]]$gene_name
-
-message("Genes, which aren't negative control genes, that weren't paired up with any target within 2Mb")
-print(setdiff(genes_paired_with_no_targets, negative_control_genes))
-
-
 ### CREATE GRNA_GROUPS_TABLE ================================================== 
 
 # Create the grna_groups_table which is just the guide name matched to the target name

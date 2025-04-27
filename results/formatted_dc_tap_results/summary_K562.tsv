@@ -1,0 +1,7 @@
+Category	Upregulated	Downregulated	WellPowered	UnderPowered
+DistalElement_Gene	32	42	1921	3147
+selfPromoter	0	118	9	33
+DistalPromoter_Gene	27	18	1059	986
+Positive_Control_DistalElement_Gene	0	19	6	8
+Random_DistalElement_Gene	31	19	1900	3109
+Validation_DistalElement_Gene	20	21	1277	1876
