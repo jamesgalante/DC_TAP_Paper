@@ -1,0 +1,35 @@
+# RESOURCES FILES ------
+
+# Cell Ranger outputs
+resources/process_validation_datasets/K562_DC_TAP_Seq/cell_ranger_output/*
+resources/process_validation_datasets/WTC11_DC_TAP_Seq/cell_ranger_output/*
+
+# TEMP MESSY to organize
+resources/TEMP_MESSY_analyze_validation_datasets/*
+# After fixing the file structure here's the >50Mb files that you can specifically ignore
+# resources/TEMP_MESSY_analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/gencode.v26lift37.annotation.gtf.gz
+# resources/TEMP_MESSY_analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/perturb_sce.rds
+
+
+# RESULTS FILES -------
+
+# Dataset Processing
+results/process_validation_datasets/*/differential_expression/final_sceptre_object.rds
+results/process_validation_datasets/*/differential_expression_w_negative_controls/final_sceptre_object.rds
+results/process_validation_datasets/*/differential_expression/sceptre_diffex_input.rds
+results/process_validation_datasets/*/perturb_sce.rds
+results/process_validation_datasets/*/power_analysis/combined_power*
+results/process_validation_datasets/*/singleton_differential_expression/final_sceptre_object.rds
+
+# TEMP MESSY to organize
+results/TEMP_MESSY_analyze_validation_datasets/*
+# After fixing the file structure here's the >50Mb files that you can specifically ignore
+# results/TEMP_MESSY_analyze_validation_datasets/duplicate_pairs_analysis/raw_counts.rds
+
+# Genome annotation files
+results/genome_annotation_files/*
+
+
+# OTHER ----------
+ARCHIVE/*
+.snakemake/*
