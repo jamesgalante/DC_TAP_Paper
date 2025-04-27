@@ -49,14 +49,14 @@ rule adding_element_gene_pair_categories:
     create_ensemble_encode_input = expand("results/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_{sample}_0.13gStd_Sceptre_perCRE_0.8pwrAt15effect_GRCh38.tsv.gz", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
   output:
     results_with_element_gene_pair_categories = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories.tsv"
-  log: "results/formatted_dc_tap_results/logs/calculate_summary_statistics_for_screen.log"
+  log: "results/formatted_dc_tap_results/logs/adding_element_gene_pair_categories.log"
   conda:
     "../envs/analyze_crispr_screen.yml"
   resources:
     mem = "32G",
     time = "2:00:00"
   script:
-    "../scripts/format_dc_tap_results/calculate_summary_statistics_for_screen.R"
+    "../scripts/format_dc_tap_results/adding_element_gene_pair_categories.R"
 
 # Rule to deal with specific pairs
 rule modify_specific_pairs_in_final_file:

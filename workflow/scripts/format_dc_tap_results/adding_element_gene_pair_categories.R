@@ -199,7 +199,7 @@ final_output <- combined_joined_w_categories %>%
     element_location = distal_or_promoter,
     gencode_promoter_overlap, 
     abc_tss_overlap,
-    gencode_protein_coding_gene_body_overlap,
+    gencode_protein_coding_gene_body_overlap = protein_coding_gene_body_overlap,
     
     # Element-Gene category
     DistalElement_Gene, 

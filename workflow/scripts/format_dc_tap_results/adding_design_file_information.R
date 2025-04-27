@@ -25,7 +25,7 @@ suppressPackageStartupMessages({
 })
 
 message("Loading input files")
-combined_validation <- read_tsv(snakemake@input$combined_validation) %>% filter(pred_id == "ENCODE_rE2G")
+combined_validation <- read_tsv(snakemake@input$combined_validation)
 
 # Load in the guide_targets files
 k562_guide_targets <- read_tsv(snakemake@input$guide_targets[[1]])

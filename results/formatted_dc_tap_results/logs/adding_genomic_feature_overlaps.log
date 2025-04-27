@@ -1,0 +1,33 @@
+Loading in packages
+There were 13 warnings (use warnings() to see them)
+Loading input files
+Rows: 14049 Columns: 29
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (14): chrom, name, hg19_target_coords, chrTSS, measuredGeneSymbol, Valid...
+dbl (13): chromStart, chromEnd, EffectSize, startTSS, endTSS, pValueAdjusted...
+lgl  (2): Significant, Regulated
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 20666 Columns: 8
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (5): #chr, name, strand, Ensembl_ID, gene_type
+dbl (3): start, end, score
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 20666 Columns: 8
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (5): #chr, name, strand, Ensembl_ID, gene_type
+dbl (3): start, end, score
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1] "TENT5B"  "KHDC4"   "ZNRD2"   "ANTKMT"  "JPT2"    "ATP5MC1" "FDX2"   
+[8] "GATD3A"  "RBIS"   
+Elements with TSS distance: 100%
+Saving output files
+Closing log file

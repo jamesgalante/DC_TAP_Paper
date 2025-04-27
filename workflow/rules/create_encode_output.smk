@@ -111,4 +111,4 @@ rule create_ensemble_epbenchmarking:
     min_pct_change = None
   conda: "../envs/r_process_crispr_data.yml"
   script:
-    "../scripts/create_encode_output/create_ep_benchmarking_dataset.R"   
+    "../scripts/create_encode_output/create_ep_benchmarking_dataset.R"

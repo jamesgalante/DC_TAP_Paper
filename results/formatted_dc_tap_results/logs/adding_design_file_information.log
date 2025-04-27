@@ -1,0 +1,30 @@
+Loading in packages
+There were 13 warnings (use warnings() to see them)
+Loading input files
+Rows: 14049 Columns: 21
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr  (8): chrom, name, chrTSS, measuredGeneSymbol, ValidConnection, CellType...
+dbl (11): chromStart, chromEnd, EffectSize, startTSS, endTSS, pValueAdjusted...
+lgl  (2): Significant, Regulated
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 14968 Columns: 12
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (8): chr, name, strand, spacer, target_chr, target_name, target_strand, ...
+dbl (4): start, end, target_start, target_end
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 16207 Columns: 12
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (8): chr, name, strand, spacer, target_chr, target_name, target_strand, ...
+dbl (4): start, end, target_start, target_end
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Saving output files
+Closing log file
