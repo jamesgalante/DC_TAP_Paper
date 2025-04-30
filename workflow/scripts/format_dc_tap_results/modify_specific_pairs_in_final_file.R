@@ -24,6 +24,11 @@ suppressPackageStartupMessages(
 message("Loading input files")
 element_gene_pairs <- read_tsv(snakemake@input$results_with_element_gene_pair_categories)
 
+# Read in the SCEPTRE discovery results with confidence intervals
+k562_sceptre_results_with_CIs <- readRDS(snakemake@input$discovery_results_w_CIs[[1]]) %>% mutate(cell_type = "K562")
+wtc11_sceptre_results_with_CIs <- readRDS(snakemake@input$discovery_results_w_CIs[[2]]) %>% mutate(cell_type = "WTC11")
+sceptre_results_with_CIs <- rbind(k562_sceptre_results_with_CIs, wtc11_sceptre_results_with_CIs)
+
 
 ### MODIFY SPECIFIC PAIRS =====================================================
 
@@ -101,6 +106,25 @@ final_pairs <- modified_pairs %>%
     all_of(categories),
     ~if_else(significant == FALSE & power_at_effect_size_15 < 0.8, FALSE, .x)
   ))
+
+### ADD IN CONFIDENCE INTERVALS ===============================================
+
+# Add in the k562 and wtc11 results by gene_id + design_file_target_name + cell_type
+final_pairs <- final_pairs %>%
+  left_join(
+    sceptre_results_with_CIs %>% 
+      select(response_id, grna_target, se_fold_change, cell_type), 
+    by = c("gene_id" = "response_id", "design_file_target_name" = "grna_target", "cell_type")
+  ) %>%
+  mutate(
+    standard_error_pct_change_effect_size = se_fold_change * 100
+  ) %>%
+  select(
+    -se_fold_change
+  ) %>%
+  relocate(
+    standard_error_pct_change_effect_size, .after = pct_change_effect_size
+  )
 
 
 ### SAVE OUTPUT ===============================================================

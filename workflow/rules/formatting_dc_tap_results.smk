@@ -8,12 +8,28 @@ rule download_TSS_500bp_bed_file:
   conda: "../envs/r_process_crispr_data.yml"
   shell:
     "wget -O {output} {params.url}"
-    
+
+# Run differential expression with sceptre's dev branch to get confidence intervals
+rule sceptre_dev_differential_expression_w_confidence_intervals:
+  input:
+    sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds"
+  output:
+    discovery_results = "results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_{sample}/results_run_discovery_analysis.rds",
+    final_sceptre_object = "results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_{sample}/final_sceptre_object.rds"
+  log: "results/formatted_dc_tap_results/logs/sceptre_dev_differential_expression_w_confidence_intervals_{sample}.log"
+  conda:
+    "../envs/sceptre_dev_for_CIs.yml"
+  resources:
+    mem = "32G",
+    time = "12:00:00"
+  script:
+    "../scripts/format_dc_tap_results/sceptre_dev_differential_expression_w_confidence_intervals.R" 
+
 # Rule to get numbers for the paper
 rule adding_design_file_information:
   input:
     combined_validation = "results/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_Combined_Validation_Datasets_GRCh38.tsv.gz",
-    guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"]),
+    guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
   output:
     results_with_design_file_features = "results/formatted_dc_tap_results/results_with_design_file_features.tsv"
   log: "results/formatted_dc_tap_results/logs/adding_design_file_information.log"
@@ -24,7 +40,7 @@ rule adding_design_file_information:
     time = "2:00:00"
   script:
     "../scripts/format_dc_tap_results/adding_design_file_information.R"
-    
+
 # Add more categories for understanding element overlap with different genomic features
 rule adding_genomic_feature_overlaps:
   input:
@@ -59,9 +75,11 @@ rule adding_element_gene_pair_categories:
     "../scripts/format_dc_tap_results/adding_element_gene_pair_categories.R"
 
 # Rule to deal with specific pairs
+# In this rule, I also create summary tables of the screen results for each category and add confidence intervals from a separate sceptre run using sceptre's dev branch
 rule modify_specific_pairs_in_final_file:
   input:
-    results_with_element_gene_pair_categories = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories.tsv"
+    results_with_element_gene_pair_categories = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories.tsv",
+    discovery_results_w_CIs = expand("results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_{sample}/results_run_discovery_analysis.rds", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
   output:
     results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv",
     summary_K562 = "results/formatted_dc_tap_results/summary_K562.tsv",
