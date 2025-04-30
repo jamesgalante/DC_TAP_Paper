@@ -21,6 +21,9 @@ results/process_validation_datasets/*/perturb_sce.rds
 results/process_validation_datasets/*/power_analysis/combined_power*
 results/process_validation_datasets/*/singleton_differential_expression/final_sceptre_object.rds
 
+# Calculating Confidence Intervals
+results/formatted_dc_tap_results/*/final_sceptre_object.rds
+
 # TEMP MESSY to organize
 results/TEMP_MESSY_analyze_validation_datasets/*
 # After fixing the file structure here's the >50Mb files that you can specifically ignore
