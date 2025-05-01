@@ -92,26 +92,26 @@ rule modify_specific_pairs_in_final_file:
     time = "2:00:00"
   script:
     "../scripts/format_dc_tap_results/modify_specific_pairs_in_final_file.R"
-    
-# Resize the elements to 500bp for compatibility with chromatin category overlap pipeline
-rule resize_dc_tap_elements_for_chromatin_categories:
+ 
+# Resize the elements to 500bp and merge overlapping elements for compatibility with chromatin category overlap pipeline
+rule resize_and_merge_dc_tap_elements_for_chromatin_categories:
   input:
     results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv",
   output:
-    resized_input_for_chromatin_categorization_pipeline = "results/formatted_dc_tap_results/resized_input_for_chromatin_categorization_pipeline.tsv"
-  log: "results/formatted_dc_tap_results/logs/resize_dc_tap_elements.log"
+    resized_and_merged_input_for_chromatin_categorization_pipeline = "results/formatted_dc_tap_results/resized_and_merged_input_for_chromatin_categorization_pipeline.tsv"
+  log: "results/formatted_dc_tap_results/logs/resize_and_merge_dc_tap_elements.log"
   conda:
     "../envs/analyze_crispr_screen.yml"
   resources:
     mem = "32G",
     time = "2:00:00"
   script:
-    "../scripts/format_dc_tap_results/resize_dc_tap_elements.R"
+    "../scripts/format_dc_tap_results/resize_and_merge_dc_tap_elements.R"
   
 # Add Maya's epigenetic categories for each pair
 rule add_element_chromatin_categories:
   input:
-    resized_input_for_chromatin_categorization_pipeline = "results/formatted_dc_tap_results/resized_input_for_chromatin_categorization_pipeline.tsv",
+    resized_and_merged_input_for_chromatin_categorization_pipeline = "results/formatted_dc_tap_results/resized_and_merged_input_for_chromatin_categorization_pipeline.tsv",
     categorized_data = "resources/formatting_dc_tap_results/all_DC_TAP.h3k27me3_quantile_50.ratio_quantile_35.h3k27ac_quantiles_60_90.WTC11_as_WTC11.tsv"
   output:
     Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements = "results/formatted_dc_tap_results/Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements.tsv"
