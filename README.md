@@ -25,22 +25,27 @@ Screen Result Files (Created in `sceptre_setup.smk`)
   - Guide Design File: `results/process_validation_datasets/K562_DC_TAP_Seq/guide_targets.tsv`
   - All Pairs Tested for Differential Expression: `results/process_validation_datasets/K562_DC_TAP_Seq/gene_gRNA_group_pairs.rds`
   - Input for SCEPTRE Differential Expression: `results/process_validation_datasets/K562_DC_TAP_Seq/differential_expression/sceptre_diffex_input.rds`
+
 Differential Expression Output Files (Created in `sceptre_power_analysis.smk`)
   - SCEPTRE Differential Expression Results: `results/process_validation_datasets/K562_DC_TAP_Seq/differential_expression/results_run_discovery_analysis.rds`
   - SCEPTRE Calibration Check Results (Negative Control Guide Testing): `results/process_validation_datasets/K562_DC_TAP_Seq/differential_expression/results_run_calibration_check.rds`
   - SCEPTRE Object post-differential expression analysis: `results/process_validation_datasets/K562_DC_TAP_Seq/differential_expression/final_sceptre_object.rds`
   - SCEPTRE Differential Expression Summary Statistics: `results/process_validation_datasets/K562_DC_TAP_Seq/differential_expression/analysis_summary.txt`
+
 Singleton Differential Expression Output Files (Created in `sceptre_power_analysis.smk`)
   - All Results - See (2) for descriptions of each file: `results/process_validation_datasets/K562_DC_TAP_Seq/singleton_differential_expression`
+
 Power Analysis Output Files (created in `sceptre_power_analysis.smk`)
   - Batched Outputs (intermediate files): `results/process_validation_datasets/K562_DC_TAP_Seq/power_analysis/effect_size_*/`
   - Combined Batched Outputs (intermediate files): `results/process_validation_datasets/K562_DC_TAP_Seq/power_analysis/combined_power_analysis_results_es_*.tsv`
   - Analyzed Power Sim Outputs (intermediate files): `results/process_validation_datasets/K562_DC_TAP_Seq/power_analysis/power_analysis_results_es_*.tsv`
   - Final Power Sim Output: `results/process_validation_datasets/K562_DC_TAP_Seq/power_analysis/output_0.13gStd_Sceptre_perCRE.tsv`
+
 Intermediate Labelling of Elements (Created in `create_encode_output.smk`):
   - All Results: `results/create_encode_output/ENCODE/*`
   - The order of execution for this ruleset is `create_encode_dataset` (hg19), `liftover_enhancers` & `liftover_crispr_dataset`, `filter_crispr_dataset` (hg38), `create_ensemble_encode`, `create_ensemble_epbenchmarking`
   - Essentially everything done in this ruleset is represented in the final file
+
 Final Screen Output Files (Created in `formatting_dc_tap_results.smk`):
   - SCEPTRE Differential Expression Results with Confidence Intervals (See point 2 for file descriptions): `results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_K562_DC_TAP_Seq/*`
   - Final Output w/ EG categories and specific pairs modified: `results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv`
