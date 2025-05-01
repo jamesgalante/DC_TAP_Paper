@@ -1,6 +1,6 @@
 # DC-TAP Workflow: Analyzing Unbiased TAP-Seq Screens
 
-This repository contains a robust and reproducible workflow for analyzing datasets generated from an unbiased DC TAP-Seq screen on K562 and WTC11
+This repository contains a robust and reproducible workflow for analyzing datasets generated from an unbiased DC TAP-Seq screen on K562 and WTC11. The final output file can be found in `results/formatted_dc_tap_results/Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements.tsv`
 
 ## Analysis Summary
 
@@ -49,6 +49,7 @@ Intermediate Labelling of Elements (Created in `create_encode_output.smk`):
 Final Screen Output Files (Created in `formatting_dc_tap_results.smk`):
   - SCEPTRE Differential Expression Results with Confidence Intervals (See point 2 for file descriptions): `results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_K562_DC_TAP_Seq/*`
   - Final Output w/ EG categories and specific pairs modified: `results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv`
+  - Summary Statistics of EG categories: `results/formatted_dc_tap_results/summary_K562.tsv`
   - Final Output w/ Added columns for 500bp extension and merging: `results/formatted_dc_tap_results/resized_and_merged_input_for_chromatin_categorization_pipeline.tsv`
   - Final Output w/ Chromatin Categories calculated for resized/merged regions: `results/formatted_dc_tap_results/Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements.tsv`
    
