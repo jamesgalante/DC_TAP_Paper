@@ -88,6 +88,12 @@ combined_joined_w_categories <- combined_joined %>%
       (measuredGeneSymbol == de_assigned_gene) & 
       DistalElement_Gene,
     
+    # Positive_Control_selfPromoter:
+    # True if the element is a selfPromoter
+    # AND it was originally designed to be one in the screen design
+    # These elements are tss positive controls
+    Positive_Control_selfPromoter = (target_type == "tss_pos") & selfPromoter,
+    
     # Random_DistalElement_Gene:
     # True if the element is a randomly selected enhancer (type "enh")
     # AND it qualifies as a DistalElement-Gene (passes all ENCODE filters)
@@ -206,6 +212,7 @@ final_output <- combined_joined_w_categories %>%
     DistalPromoter_Gene, 
     selfPromoter, 
     Positive_Control_DistalElement_Gene, 
+    Positive_Control_selfPromoter,
     Random_DistalElement_Gene, 
     
     # Power Simulation Results

@@ -3,4 +3,5 @@ DistalElement_Gene	32	42	1921	3145
 selfPromoter	0	118	9	33
 DistalPromoter_Gene	27	18	1059	986
 Positive_Control_DistalElement_Gene	0	20	6	8
+Positive_Control_selfPromoter	0	32	1	6
 Random_DistalElement_Gene	31	19	1900	3109

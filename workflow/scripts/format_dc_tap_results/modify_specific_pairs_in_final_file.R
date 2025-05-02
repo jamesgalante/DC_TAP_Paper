@@ -84,6 +84,7 @@ categories <- c(
   "selfPromoter",
   "DistalPromoter_Gene",
   "Positive_Control_DistalElement_Gene",
+  "Positive_Control_selfPromoter", 
   "Random_DistalElement_Gene"
 )
 
