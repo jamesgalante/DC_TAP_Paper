@@ -1,4 +1,4 @@
-Significant_Upregulated	Significant_Downregulated	Non_Significant_Well_Powered	Non_Significant_Under_Powered	Cell_Type	
+Pair_Category	Significant_Upregulated	Significant_Downregulated	Non_Significant_Well_Powered	Non_Significant_Under_Powered	Cell_Type
 DistalElement_Gene	32	42	1921	3145	K562
 selfPromoter	0	118	9	33	K562
 DistalPromoter_Gene	27	18	1059	986	K562

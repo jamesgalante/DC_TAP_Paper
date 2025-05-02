@@ -29,14 +29,14 @@ wtc11_summary <- read_tsv(snakemake@input$wtc11_summary) %>% mutate(cell_type = 
 ### COMBINING THE TABLES ======================================================
 
 full_summary <- rbind(k562_summary, wtc11_summary)
-colnames(full_summary) <- c("Significant_Upregulated", "Significant_Downregulated", "Non_Significant_Well_Powered", "Non_Significant_Under_Powered", "Cell_Type")
+colnames(full_summary) <- c("Pair_Category", "Significant_Upregulated", "Significant_Downregulated", "Non_Significant_Well_Powered", "Non_Significant_Under_Powered", "Cell_Type")
 
 
 ### SAVE OUTPUT ===============================================================
 
 # Save output files
 message("Saving output files")
-write_tsv(full_summary, snakemake@output$summary_of_element_gene_categories_supplementary_table)
+write_tsv(full_summary, snakemake@output$summary_of_element_gene_categories_supplementary_table, col_names = T)
 
 
 ### CLEAN UP ==================================================================
