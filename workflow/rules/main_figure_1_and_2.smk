@@ -20,7 +20,8 @@ rule effect_size_plots:
   input:
     results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv"
   output:
-    effect_size_boxplot = "results/main_figure_1_and_2/effect_size_boxplot.pdf"
+    effect_size_boxplot = "results/main_figure_1_and_2/effect_size_boxplot.pdf",
+    positive_control_self_promoters_effect_size_boxplot = "results/main_figure_1_and_2/positive_control_self_promoters_effect_size_boxplot.pdf"
   log: "results/main_figure_1_and_2/logs/effect_size_plots.log"
   conda:
     "../envs/analyze_crispr_screen.yml"
@@ -29,7 +30,7 @@ rule effect_size_plots:
     time = "1:00:00"
   script:
     "../scripts/main_figure_1_and_2/effect_size_plots.R" 
-
+    
 # Replicates Analysis
 rule compare_replicates:
   input:
