@@ -4,11 +4,8 @@
 resources/process_validation_datasets/K562_DC_TAP_Seq/cell_ranger_output/*
 resources/process_validation_datasets/WTC11_DC_TAP_Seq/cell_ranger_output/*
 
-# TEMP MESSY to organize
-resources/TEMP_MESSY_analyze_validation_datasets/*
-# After fixing the file structure here's the >50Mb files that you can specifically ignore
-# resources/TEMP_MESSY_analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/gencode.v26lift37.annotation.gtf.gz
-# resources/TEMP_MESSY_analyze_validation_datasets/duplicate_pairs_analysis/gasperini_data/perturb_sce.rds
+# Duplciates analysis resources (gasperini matrix)
+resources/main_figure_1_and_2/duplicate_pairs_analysis/perturb_sce.rds
 
 
 # RESULTS FILES -------
