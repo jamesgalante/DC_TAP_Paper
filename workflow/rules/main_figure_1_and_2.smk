@@ -135,6 +135,6 @@ rule create_main_figure_1_and_2:
     k562_replicates_fig2 = "results/main_figure_1_and_2/compare_replicates/k562_plot.pdf", 
     wtc11_replicates_fig2 = "results/main_figure_1_and_2/compare_replicates/wtc11_plot.pdf", 
     dc_tap_x_qpcr_fig2 = "results/main_figure_1_and_2/compare_k562_effect_sizes_to_qPCR/comparison_others.pdf",
-    duplicates_plot_fig2 = "results/main_figure_1_and_2/duplicate_pairs_analysis/final_correlation_plot.pdf"
+    # duplicates_plot_fig2 = "results/main_figure_1_and_2/duplicate_pairs_analysis/final_correlation_plot.pdf"
   output:
     touch("results/main_figure_1_and_2/create_main_figure_1_and_2.done")

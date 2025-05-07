@@ -160,7 +160,8 @@ final_output <- combined_joined_w_categories %>%
     log_2_FC_effect_size = log2(EffectSize + 1),
     intended_target_name_hg38 = paste0(chrom, ":", chromStart, "-", chromEnd),
     element_gene_pair_identifier_hg38 = paste0(measuredGeneSymbol, "|", intended_target_name_hg38),
-    element_gene_pair_identifier_hg19 = paste0(measuredGeneSymbol, "|", hg19_target_coords)
+    element_gene_pair_identifier_hg19 = paste0(measuredGeneSymbol, "|", hg19_target_coords),
+    distance_to_gencode_gene_TSS = abs(distToTSS)
   ) %>%
   # Select and organize final columns
   select(
@@ -193,7 +194,7 @@ final_output <- combined_joined_w_categories %>%
     significant = Significant,
     
     # Distance to TSS
-    distance_to_gencode_gene_TSS = abs(distToTSS), 
+    distance_to_gencode_gene_TSS, 
     distance_to_abc_canonical_TSS,
     
     # TSS coordinates HG38
