@@ -1,6 +1,6 @@
 # DC-TAP Workflow: Analyzing Unbiased TAP-Seq Screens
 
-This repository contains a robust and reproducible workflow for analyzing datasets generated from an unbiased DC TAP-Seq screen on K562 and WTC11. The final output file can be found in `results/formatted_dc_tap_results/Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements.tsv`
+This repository contains a robust and reproducible workflow for analyzing datasets generated from an unbiased DC TAP-Seq screen on K562 and WTC11. The final output file can be found in `results/formatted_dc_tap_results/Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_and_merged_elements.tsv`. An explanation of each column in that table can be found in `resources/formatting_dc_tap_results/columns_of_Final_DC_TAP_Seq_Results_table.txt`
 
 ## Analysis Summary
 

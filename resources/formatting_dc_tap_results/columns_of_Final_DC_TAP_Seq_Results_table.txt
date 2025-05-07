@@ -1,0 +1,79 @@
+
+# Targeted region
+intended_target_name_hg38, The region of the targeted element lifted over from hg19 to hg38 in chr:start-end format
+targeting_chr_hg38, The chromosome (chr) of intended_target_name_hg38
+targeting_start_hg38, The start of intended_target_name_hg38
+targeting_end_hg38, The end of intended_target_name_hg38
+intended_target_name_hg19,  The region of the targeted element in hg19 in chr:start-end format
+targeting_chr_hg19, The chromosome (chr) of intended_target_name_hg19
+targeting_start_hg19, The start of intended_target_name_hg19
+targeting_end_hg19, The end of intended_target_name_hg19
+element_gene_pair_identifier_hg38, Unique identifier for each element gene pair in gene_id|intended_target_name_hg38 format
+element_gene_pair_identifier_hg19, Unique identifier for each element gene pair in gene_id|intended_target_name_hg19 format
+
+# Gene and cell type
+gene_symbol, Gene tested for differential expression upon CRISPRi perturbation of the targeted element in gene symbol format
+gene_id, Gene tested for differential expression upon CRISPRi perturbation of the targeted element in ensembl id format
+cell_type, Cell type tested
+
+# Effect Size Stats
+fold_change_effect_size, The effect size of the tested element-gene pair in fold change
+log_2_FC_effect_size, The effect size of the tested element-gene pair in log 2 fold change
+pct_change_effect_size, The effect size of the tested element-gene pair in percent change
+standard_error_fold_change, Standard error of the fold change
+standard_error_log_2_FC, Standard error of the log 2 fold change
+standard_error_pct_change, Standard error of the percent change
+lower_CI_95_fold_change, Lower bound of the 95% confidence interval for fold change effect size
+upper_CI_95_fold_change, Upper bound of the 95% confidence interval for fold change effect size
+lower_CI_95_log_2_FC, Lower bound of the 95% confidence interval for log 2 fold change effect size
+upper_CI_95_log_2_FC, Upper bound of the 95% confidence interval for log 2 fold change effect size
+lower_CI_95_pct_change, Lower bound of the 95% confidence interval for percent change effect size
+upper_CI_95_pct_change, Upper bound of the 95% confidence interval for percent change effect size
+
+# Significance
+sceptre_p_value, Raw p-value from SCEPTRE test for association between the element and gene
+sceptre_adj_p_value, Adjusted p-value after multiple hypothesis testing correction
+significant, Boolean indicator of whether the element-gene pair shows significant association after FDR
+
+# Gene Stats
+distance_to_gencode_gene_TSS, Distance in base pairs from element to gene's transcription start site (TSS) in GENCODE
+distance_to_abc_canonical_TSS, Distance in base pairs from element to gene's transcription start site in ABC model
+chrTSS_hg38, Chromosome of the gene's transcription start site in hg38
+startTSS_hg38, Start position of the gene's transcription start site in hg38
+endTSS_hg38, End position of the gene's transcription start site in hg38
+
+# EG Category information
+element_location, Whether the element tested lies in a promoter or not (distal)
+gencode_promoter_overlap, element overlap with protein-coding promoters in gencode
+abc_tss_overlap, element overlap with protein-coding promoters from ABC paper
+gencode_protein_coding_gene_body_overlap, element overlap with protein coding transcript gene bodies defined by gencode
+DistalElement_Gene, all high-confidence distal element-gene pairs created by removing any pair where the element overlaps a promoter or where the element is in the gene body of the gene it's tested against or where the element is <1kbp from the transcription start site of the gene it's tested against
+DistalPromoter_Gene, Pairs where the element overlaps the promoter of a gene different from the gene it's tested against
+selfPromoter, Pairs where the element overlaps the promoter of their tested gene (promoter elements tested against their own gene)
+Positive_Control_DistalElement_Gene, High-confidence distal element-gene pairs that are denoted as positive control distal elements in the screen design
+Positive_Control_selfPromoter, Pairs that are selfPromoter and which were originally designed to be TSS positive controls (tss_pos in design_file_type column)
+Random_DistalElement_Gene, High-confidence distal element-gene pairs that are "unbiased" elements targeted in each of the 25 2Mb loci
+
+# Statistical power to detect N% effect size
+power_at_effect_size_10, Statistical power to detect an effect size of 10% change
+power_at_effect_size_15, Statistical power to detect an effect size of 15% change
+power_at_effect_size_20, Statistical power to detect an effect size of 20% change
+power_at_effect_size_25, Statistical power to detect an effect size of 25% change
+power_at_effect_size_50, Statistical power to detect an effect size of 50% change
+
+# Screen design information
+intended_positive_control_distal_element_target_gene, the intended response gene for the positive control distal elements
+intended_positive_control_target_gene, the intended response gene for positive control distal elements (tss_pos and tss_random)
+design_file_target_name, the original target name in the screen design
+design_file_type, the original target type in the screen design (tss_pos = promoter element of a positive control gene; tss_random = promoter element of random gene in random loci; enh = candidate cis-regulatory element; DE = positive control distal element)
+guide_ids, list of the guide ids targeting the element
+
+# Chromatin Categories
+resized_merged_targeting_chr_hg38, The chromosome of the resized_merged_element_gene_pair_identifier_hg38
+resized_merged_targeting_start_hg38, The start of the resized_merged_element_gene_pair_identifier_hg38
+resized_merged_targeting_end_hg38, The end of the resized_merged_element_gene_pair_identifier_hg38
+resized_merged_element_gene_pair_identifier_hg38, Unique identidier for the resized and merged regions that were inputted into the chromatin categories pipeline in gene_symbol|chr:start-end format
+ubiq_category, Whether or not that gene is a ubiquitously expressed gene
+element_category_with_dnase, The element category with information on DNase level
+element_category_simple, Constituents of the element_category column
+element_category, Different chromatin features overlapped with the element region (H3K27me3 overlap, CTCF overlap, H3K27ac high, H3K27ac medium, H3K27ac low)

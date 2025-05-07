@@ -14,6 +14,7 @@ benchmark_validation_datasets:
   download_urls:
     gencode.v32lift37: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_32/GRCh37_mapping/gencode.v32lift37.annotation.gtf.gz"
     gencode.v32: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_32/gencode.v32.annotation.gtf.gz"
+    gencode.v26lift37: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/GRCh37_mapping/gencode.v26lift37.annotation.gtf.gz"
     liftover_chain: "https://hgdownload.cse.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz"
     tss_bed: "https://raw.githubusercontent.com/broadinstitute/ABC-Enhancer-Gene-Prediction/refs/heads/main/reference/hg38/CollapsedGeneBounds.hg38.TSS500bp.bed" 
   encode_datasets:

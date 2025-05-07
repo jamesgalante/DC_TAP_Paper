@@ -112,9 +112,9 @@ rule resize_and_merge_dc_tap_elements_for_chromatin_categories:
 rule add_element_chromatin_categories:
   input:
     resized_and_merged_input_for_chromatin_categorization_pipeline = "results/formatted_dc_tap_results/resized_and_merged_input_for_chromatin_categorization_pipeline.tsv",
-    categorized_data = "resources/formatting_dc_tap_results/all_DC_TAP.h3k27me3_quantile_50.ratio_quantile_35.h3k27ac_quantiles_60_90.WTC11_as_WTC11.tsv"
+    categorized_data = "resources/formatting_dc_tap_results/all_dc_tap.h3k27me3_quantile_50.ratio_quantile_35.h3k27ac_quantiles_60_90.WTC11_as_WTC11.tsv.gz"
   output:
-    Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements = "results/formatted_dc_tap_results/Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements.tsv"
+    Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_and_merged_elements = "results/formatted_dc_tap_results/Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_and_merged_elements.tsv"
   log: "results/formatted_dc_tap_results/logs/add_element_epigenetic_categories.log"
   conda:
     "../envs/analyze_crispr_screen.yml"

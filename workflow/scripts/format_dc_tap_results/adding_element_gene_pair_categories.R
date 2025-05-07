@@ -193,7 +193,7 @@ final_output <- combined_joined_w_categories %>%
     significant = Significant,
     
     # Distance to TSS
-    distance_to_gencode_gene_TSS = distToTSS, 
+    distance_to_gencode_gene_TSS = abs(distToTSS), 
     distance_to_abc_canonical_TSS,
     
     # TSS coordinates HG38

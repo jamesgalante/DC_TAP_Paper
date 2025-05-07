@@ -22,21 +22,17 @@ suppressPackageStartupMessages(
 )
 
 message("Loading input files")
-resized_Formatted_DC_TAP_Seq_Results <- read_tsv(snakemake@input$resized_input_for_chromatin_categorization_pipeline)
+resized_Formatted_DC_TAP_Seq_Results <- read_tsv(snakemake@input$resized_and_merged_input_for_chromatin_categorization_pipeline)
 categorized_data <- read_tsv(snakemake@input$categorized_data)
 
 
 ### ADDING CATEGORIES =========================================================
 
 # Add the categories to the resized_Formatted data
-Formatted_DC_TAP_Seq_Results_w_Categories <- resized_Formatted_DC_TAP_Seq_Results %>%
-  left_join(
-    categorized_data %>%
-      select(element_gene_pair_identifier_hg38, element_category, element_category_simple, element_category_with_dnase, CellType) %>%
-      dplyr::rename(
-        cell_type = CellType
-      ),
-    by = c("element_gene_pair_identifier_hg38", "cell_type")
+Formatted_DC_TAP_Seq_Results_w_Categories <- cbind(
+  resized_Formatted_DC_TAP_Seq_Results, 
+  categorized_data %>% 
+    select(ubiq_category, element_category_with_dnase, element_category_simple, element_category)
   )
 
 
@@ -44,7 +40,7 @@ Formatted_DC_TAP_Seq_Results_w_Categories <- resized_Formatted_DC_TAP_Seq_Result
 
 # Save output files
 message("Saving output files")
-write_tsv(Formatted_DC_TAP_Seq_Results_w_Categories, snakemake@output$Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_elements)
+write_tsv(Formatted_DC_TAP_Seq_Results_w_Categories, snakemake@output$Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_and_merged_elements)
 
 
 ### CLEAN UP ==================================================================

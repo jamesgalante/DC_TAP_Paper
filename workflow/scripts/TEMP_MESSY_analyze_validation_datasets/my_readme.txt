@@ -1,1 +1,0 @@
-The process_bam_files... is being run by Maya's pipeline, so this implementation can be removed

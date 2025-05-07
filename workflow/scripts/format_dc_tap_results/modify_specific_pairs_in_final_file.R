@@ -108,23 +108,44 @@ final_pairs <- modified_pairs %>%
     ~if_else(significant == FALSE & power_at_effect_size_15 < 0.8, FALSE, .x)
   ))
 
+
 ### ADD IN CONFIDENCE INTERVALS ===============================================
 
 # Add in the k562 and wtc11 results by gene_id + design_file_target_name + cell_type
 final_pairs <- final_pairs %>%
   left_join(
     sceptre_results_with_CIs %>% 
-      select(response_id, grna_target, se_fold_change, cell_type), 
+      select(response_id, grna_target, fold_change_effect_size = fold_change, se_fold_change, cell_type), 
     by = c("gene_id" = "response_id", "design_file_target_name" = "grna_target", "cell_type")
   ) %>%
+  # Calculate all effect size statistics
   mutate(
-    standard_error_pct_change_effect_size = se_fold_change * 100
+    # Standard errors
+    standard_error_fold_change = se_fold_change,
+    standard_error_pct_change = se_fold_change * 100,
+    standard_error_log_2_FC = se_fold_change / (fold_change_effect_size * log(2)),
+    
+    # Confidence intervals for fold change
+    lower_CI_95_fold_change = fold_change_effect_size - 1.96 * standard_error_fold_change,
+    upper_CI_95_fold_change = fold_change_effect_size + 1.96 * standard_error_fold_change,
+    
+    # Confidence intervals for log2 fold change
+    lower_CI_95_log_2_FC = log_2_FC_effect_size - 1.96 * standard_error_log_2_FC,
+    upper_CI_95_log_2_FC = log_2_FC_effect_size + 1.96 * standard_error_log_2_FC,
+    
+    # Confidence intervals for percent change
+    lower_CI_95_pct_change = pct_change_effect_size - 1.96 * standard_error_pct_change,
+    upper_CI_95_pct_change = pct_change_effect_size + 1.96 * standard_error_pct_change
   ) %>%
-  select(
-    -se_fold_change
-  ) %>%
+  # Remove original SE column after calculations
+  select(-se_fold_change) %>%
+  # Rearrange columns in the specified order
   relocate(
-    standard_error_pct_change_effect_size, .after = pct_change_effect_size
+    fold_change_effect_size, log_2_FC_effect_size, pct_change_effect_size,
+    standard_error_fold_change, standard_error_log_2_FC, standard_error_pct_change,
+    lower_CI_95_fold_change, upper_CI_95_fold_change,
+    lower_CI_95_log_2_FC, upper_CI_95_log_2_FC,
+    lower_CI_95_pct_change, upper_CI_95_pct_change, .after = cell_type
   )
 
 
