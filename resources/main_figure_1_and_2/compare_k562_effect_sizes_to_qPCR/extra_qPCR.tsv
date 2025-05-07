@@ -1,0 +1,9 @@
+Gene-Target	qPCR	Stdev qPCR	SE_qPCR	Name
+AP1S1_tss_random	0.98	0.01	0.007	K562_Random_Screen_Crop_4595
+PLP2_tss_pos	0.92	0.02	0.010	K562_Random_Screen_Crop_14134
+ALAS2_enh	0.98	0.01	0.005	K562_Random_Screen_Crop_14139
+SMIM1_enh	0.82	0.09	0.043	K562_Random_Screen_Crop_24
+VAMP8_tss_random	0.86	0.06	0.031	K562_Random_Screen_Crop_1955
+FAM83A_tss_pos	0.51	0.17	0.085	K562_Random_Screen_Crop_4883
+PIN1_enh	0.50	0.24	0.122	K562_Random_Screen_Crop_11921
+LY6E_enh	0.64	0.10	0.050	K562_Random_Screen_Crop_5115
