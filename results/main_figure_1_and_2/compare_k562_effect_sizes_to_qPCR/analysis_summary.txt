@@ -1,0 +1,42 @@
+An object of class sceptre_object.
+
+Attributes of the data:
+	• 17322 cells (13874 after cellwise QC)
+	• 93 responses
+	• Low multiplicity-of-infection 
+	• 12 targeting gRNAs (distributed across 12 targets) 
+	• 85 non-targeting gRNAs 
+	• 4 covariates (grna_n_nonzero, grna_n_umis, response_n_nonzero, response_n_umis)
+
+Analysis status:
+	✓ import_data()
+	✓ set_analysis_parameters()
+	✓ assign_grnas()
+	✓ run_qc()
+	✓ run_calibration_check()
+	✗ run_power_check()
+	✓ run_discovery_analysis()
+
+Analysis parameters: 
+	• Discovery pairs: data frame with 1116 pairs (863 after pairwise QC)
+	• Positive control pairs: data frame with 0 pairs
+	• Sidedness of test: both
+	• Control group: non-targeting cells
+	• Resampling mechanism: permutations
+	• gRNA integration strategy: union
+	• Resampling approximation: skew normal
+	• Multiple testing adjustment: BH at level 0.1
+	• N nonzero treatment cells threshold: 7
+	• N nonzero control cells threshold: 7
+	• Formula object: log(response_n_nonzero) + log(response_n_umis)
+
+gRNA-to-cell assignment information:
+	• Assignment method: mixture
+	• Mean N cells per gRNA: 195.57
+	• Mean N gRNAs per cell (MOI): 1.1 
+	• gRNA assignment formula object: log(response_n_nonzero) + log(response_n_umis) + log(grna_n_nonzero + 1) + log(grna_n_umis + 1)
+
+Summary of results:
+	• N negative control pairs called as significant: 41/863
+	• Mean log-2 FC for negative control pairs: 0.019
+	• N discovery pairs called as significant: 98/863

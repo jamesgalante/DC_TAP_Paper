@@ -64,7 +64,7 @@ rule liftover_crispr_dataset:
   input:
     results = "results/create_encode_output/ENCODE/ENCODE_{sample}_{sd}gStd_{method}_{strategy}_hg19.tsv.gz",
     enh_hg38 = "results/create_encode_output/ENCODE/liftover/{sample}_{sd}gStd_{method}_{strategy}/enh_hg38.bed",
-    annot_hg38 = "results/genome_annotation_files/gencode.v32.annotation.gtf.gz"
+    annot_hg38 = "results/genome_annotation_files/gencode.v26.annotation.gtf.gz"
   output: "results/create_encode_output/ENCODE/ENCODE_{sample}_{sd}gStd_{method}_{strategy}_GRCh38.tsv.gz"
   wildcard_constraints:
     sample = "|".join(liftover_samples(config))

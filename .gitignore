@@ -25,6 +25,17 @@ results/process_validation_datasets/*/singleton_differential_expression/final_sc
 # Calculating Confidence Intervals
 results/formatted_dc_tap_results/*/final_sceptre_object.rds
 
+# Duplicates analysis
+results/main_figure_1_and_2/duplicate_pairs_analysis/differential_expression/final_sceptre_object.rds
+results/main_figure_1_and_2/duplicate_pairs_analysis/differential_expression/sceptre_diffex_input.rds
+results/main_figure_1_and_2/duplicate_pairs_analysis/power_analysis/combined_power*
+results/main_figure_1_and_2/duplicate_pairs_analysis/perturb_sce.rds
+results/main_figure_1_and_2/duplicate_pairs_analysis/raw_counts.rds
+# Temporarily excluding this file here because its a little over github's 50Mb file limit (76Mb) - should gzip
+results/main_figure_1_and_2/duplicate_pairs_analysis/results_with_element_gene_pair_categories.tsv
+
+
+
 # Genome annotation files
 results/genome_annotation_files/*
 

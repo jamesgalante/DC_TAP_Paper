@@ -33,12 +33,3 @@ rule modify_guide_targets:
     time = "2:00:00"
   script:
     "../scripts/supplementary_tables/modify_guide_targets.R"    
-  
-  
-rule create_all_supplementary_tables:
-  input:
-    summary_of_element_gene_categories_supplementary_table = "results/supplementary_tables/summary_of_element_gene_categories.tsv",
-    k562_guide_targets_supp_table = "results/supplementary_tables/k562_guide_targets_supp_table.tsv",
-    wtc11_guide_targets_supp_table = "results/supplementary_tables/wtc11_guide_targets_supp_table.tsv"
-  output:
-    touch("results/supplementary_tables/create_all_supplementary_tables.done")

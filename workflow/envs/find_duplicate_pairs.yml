@@ -11,3 +11,4 @@ dependencies:
   - r-tidyverse
   - bioconductor-singlecellexperiment
   - bioconductor-genomicranges
+  - bioconductor-biocparallel

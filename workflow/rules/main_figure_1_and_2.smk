@@ -31,6 +31,22 @@ rule effect_size_plots:
   script:
     "../scripts/main_figure_1_and_2/effect_size_plots.R" 
     
+# Plot for SLC2A3|chr12:7960676-7960977 Effect Sizes compared to Negative Controls
+rule slc2a3_effect_size_plot:
+  input:
+    results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv",
+    wtc11_calibration_check_results = "results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_WTC11_DC_TAP_Seq/results_run_calibration_check.rds"
+  output:
+    slc2a3_effect_size_barplot = "results/main_figure_1_and_2/slc2a3_effect_size_barplot.pdf"
+  log: "results/main_figure_1_and_2/logs/slc2a3_effect_size_plot.log"
+  conda:
+    "../envs/analyze_crispr_screen.yml"
+  resources:
+    mem = "8G",
+    time = "1:00:00"
+  script:
+    "../scripts/main_figure_1_and_2/slc2a3_effect_size_plot.R" 
+    
 # Replicates Analysis
 rule compare_replicates:
   input:
@@ -121,21 +137,18 @@ rule downsampling_reads_for_UMIs:
     "../scripts/main_figure_1_and_2/downsampling_reads_for_UMIs.py"
 
 # Duplicates Analysis
-# Because this analysis requires many rules, it was moved to duplicate_pairs_analysis.smk
-# The output of this analysis is included in the rule below
-
-# Main Figure 2
-rule create_main_figure_1_and_2:
+# Because this analysis requires many rules, most of the analysis was moved to duplicate_pairs_analysis.smk
+rule find_duplicate_pairs:
   input:
-    # Figure 1 plot
-    dc_tap_x_qpcr_fig1 = "results/main_figure_1_and_2/compare_k562_effect_sizes_to_qPCR/comparison_positive_controls.pdf",
-    # Figure 2 plots
-    k562_distance_by_es_fig2 = "results/main_figure_1_and_2/k562_distance_by_es.pdf",
-    wtc11_distance_by_es_fig2 = "results/main_figure_1_and_2/wtc11_distance_by_es.pdf",
-    effect_size_plot_fig2 = "results/main_figure_1_and_2/effect_size_boxplot.pdf",
-    k562_replicates_fig2 = "results/main_figure_1_and_2/compare_replicates/k562_plot.pdf", 
-    wtc11_replicates_fig2 = "results/main_figure_1_and_2/compare_replicates/wtc11_plot.pdf", 
-    dc_tap_x_qpcr_fig2 = "results/main_figure_1_and_2/compare_k562_effect_sizes_to_qPCR/comparison_others.pdf",
-    # duplicates_plot_fig2 = "results/main_figure_1_and_2/duplicate_pairs_analysis/final_correlation_plot.pdf"
+    gasperini_results = "results/main_figure_1_and_2/duplicate_pairs_analysis/results_with_element_gene_pair_categories.tsv",
+    dc_tap_results = "results/formatted_dc_tap_results/Final_DC_TAP_Seq_Results_w_Chromatin_Categories_on_resized_and_merged_elements.tsv"
   output:
-    touch("results/main_figure_1_and_2/create_main_figure_1_and_2.done")
+    duplicate_pairs_plot = "results/main_figure_1_and_2/duplicate_pairs_analysis/duplicate_pairs.pdf"
+  log: "results/main_figure_1_and_2/logs/find_duplicate_pairs.log"
+  conda:
+    "../envs/all_packages.yml"
+  resources:
+    mem = "8G",
+    time = "1:00:00"
+  script:
+    "../scripts/main_figure_1_and_2/find_duplicate_pairs.R"

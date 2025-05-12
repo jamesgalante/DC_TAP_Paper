@@ -21,3 +21,31 @@ rule all:
     "results/supplementary_tables/create_all_supplementary_tables.done",
     "results/main_figure_1_and_2/create_main_figure_1_and_2.done"
 
+# Main Figure 2
+rule create_main_figure_1_and_2:
+  input:
+    # Figure 1 plot
+    dc_tap_x_qpcr_fig1 = "results/main_figure_1_and_2/compare_k562_effect_sizes_to_qPCR/comparison_positive_controls.pdf",
+    # Figure 2 plots
+    k562_distance_by_es_fig2 = "results/main_figure_1_and_2/k562_distance_by_es.pdf",
+    wtc11_distance_by_es_fig2 = "results/main_figure_1_and_2/wtc11_distance_by_es.pdf",
+    effect_size_plot_fig2 = "results/main_figure_1_and_2/effect_size_boxplot.pdf",
+    positive_control_self_promoters_effect_size_plot_fig2 = "results/main_figure_1_and_2/positive_control_self_promoters_effect_size_boxplot.pdf",
+    k562_replicates_fig2 = "results/main_figure_1_and_2/compare_replicates/k562_plot.pdf", 
+    wtc11_replicates_fig2 = "results/main_figure_1_and_2/compare_replicates/wtc11_plot.pdf", 
+    dc_tap_x_qpcr_fig2 = "results/main_figure_1_and_2/compare_k562_effect_sizes_to_qPCR/comparison_others.pdf",
+    duplicates_plot_fig2 = "results/main_figure_1_and_2/duplicate_pairs_analysis/duplicate_pairs.pdf"
+  output:
+    touch("results/main_figure_1_and_2/create_main_figure_1_and_2.done")
+    
+# Main Figure 3
+# rule create_main_figure_3:
+    
+# Create the supplementary tables
+rule create_all_supplementary_tables:
+  input:
+    summary_of_element_gene_categories_supplementary_table = "results/supplementary_tables/summary_of_element_gene_categories.tsv",
+    k562_guide_targets_supp_table = "results/supplementary_tables/k562_guide_targets_supp_table.tsv",
+    wtc11_guide_targets_supp_table = "results/supplementary_tables/wtc11_guide_targets_supp_table.tsv"
+  output:
+    touch("results/supplementary_tables/create_all_supplementary_tables.done")
