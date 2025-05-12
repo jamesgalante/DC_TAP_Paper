@@ -27,6 +27,7 @@ results_with_element_gene_pair_categories_modified <- read_tsv(snakemake@input$r
 
 # Filter for Random_DistalElement_Gene
 results_with_element_gene_pair_categories_modified <- results_with_element_gene_pair_categories_modified %>% 
+  filter(significant | power_at_effect_size_15 >= 0.8) %>%
   filter(Random_DistalElement_Gene)
 
 

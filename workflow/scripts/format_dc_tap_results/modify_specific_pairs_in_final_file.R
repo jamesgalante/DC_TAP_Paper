@@ -99,20 +99,10 @@ message("\nSummary statistics for WTC11:")
 print(summary_WTC11)
 
 
-### REMOVE UNDERPOWERED PAIRS =================================================
-
-message("Removing underpowered non-significant pairs")
-final_pairs <- modified_pairs %>%
-  mutate(across(
-    all_of(categories),
-    ~if_else(significant == FALSE & power_at_effect_size_15 < 0.8, FALSE, .x)
-  ))
-
-
 ### ADD IN CONFIDENCE INTERVALS ===============================================
 
 # Add in the k562 and wtc11 results by gene_id + design_file_target_name + cell_type
-final_pairs <- final_pairs %>%
+final_pairs <- modified_pairs %>%
   left_join(
     sceptre_results_with_CIs %>% 
       select(response_id, grna_target, fold_change_effect_size = fold_change, se_fold_change, cell_type), 

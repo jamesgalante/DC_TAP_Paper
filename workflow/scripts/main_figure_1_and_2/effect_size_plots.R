@@ -45,6 +45,7 @@ effect_size_boxplot <- results_with_element_gene_pair_categories_modified %>%
 # Let's look at all pairs labelled as tss_pos in the screen design
 positive_control_self_promoters_effect_size_boxplot <- results_with_element_gene_pair_categories_modified %>%
   filter(Positive_Control_selfPromoter) %>%
+  filter(significant | power_at_effect_size_15 >= 0.8) %>%
   ggplot(aes(x = cell_type, y = pct_change_effect_size)) +
   geom_boxplot(aes(fill = cell_type), outlier.shape = NA, show.legend = FALSE) +
   geom_jitter(aes(color = significant), width = 0.2, size = 0.9, alpha = 0.8) +

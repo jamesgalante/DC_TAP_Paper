@@ -41,6 +41,5 @@ Summary statistics for WTC11:
 4 Positive_Control_DistalEle…           0             0           1            1
 5 Positive_Control_selfPromo…           0             4           0            3
 6 Random_DistalElement_Gene            26            55        2836         1690
-Removing underpowered non-significant pairs
 Saving output files
 Closing log file
