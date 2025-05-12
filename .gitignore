@@ -28,7 +28,8 @@ results/formatted_dc_tap_results/*/final_sceptre_object.rds
 # Duplicates analysis
 results/main_figure_1_and_2/duplicate_pairs_analysis/differential_expression/final_sceptre_object.rds
 results/main_figure_1_and_2/duplicate_pairs_analysis/differential_expression/sceptre_diffex_input.rds
-results/main_figure_1_and_2/duplicate_pairs_analysis/power_analysis/combined_power*
+results/main_figure_1_and_2/duplicate_pairs_analysis/power_analysis/*
+!results/main_figure_1_and_2/duplicate_pairs_analysis/power_analysis/output_0.13gStd_Sceptre_perCRE.tsv
 results/main_figure_1_and_2/duplicate_pairs_analysis/perturb_sce.rds
 results/main_figure_1_and_2/duplicate_pairs_analysis/raw_counts.rds
 # Temporarily excluding this file here because its a little over github's 50Mb file limit (76Mb) - should gzip
