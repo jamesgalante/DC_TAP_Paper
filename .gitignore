@@ -45,3 +45,11 @@ results/genome_annotation_files/*
 # OTHER ----------
 ARCHIVE/*
 .snakemake/*
+
+# RDA objects directory
+RDA_objects/
+
+# Log directories
+results/main_figure_1_and_2/logs/
+results/process_validation_datasets/K562_DC_TAP_Seq/logs/
+results/process_validation_datasets/WTC11_DC_TAP_Seq/logs/
