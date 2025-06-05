@@ -55,6 +55,9 @@ Positive_Control_selfPromoter, Pairs that are selfPromoter and which were origin
 Random_DistalElement_Gene, High-confidence distal element-gene pairs that are "unbiased" elements targeted in each of the 25 2Mb loci
 
 # Statistical power to detect N% effect size
+power_at_effect_size_2, Statistical power to detect an effect size of 2% change
+power_at_effect_size_3, Statistical power to detect an effect size of 3% change
+power_at_effect_size_5, Statistical power to detect an effect size of 5% change
 power_at_effect_size_10, Statistical power to detect an effect size of 10% change
 power_at_effect_size_15, Statistical power to detect an effect size of 15% change
 power_at_effect_size_20, Statistical power to detect an effect size of 20% change

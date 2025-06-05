@@ -1,0 +1,11 @@
+name: downsampling
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+  - r
+dependencies:
+  - bioconductor-rhdf5
+  - r-base
+  - r-tidyverse
+  - r-seurat

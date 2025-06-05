@@ -12,6 +12,7 @@ include: "rules/formatting_dc_tap_results.smk"
 # Include all rules for creating paper items
 include: "rules/supplementary_tables.smk"
 include: "rules/main_figure_1_and_2.smk"
+include: "rules/main_figure_3.smk"
 include: "rules/duplicate_pairs_analysis.smk"
 
 # Perform all analyses to output benchmarked datasets
@@ -26,6 +27,8 @@ rule create_main_figure_1_and_2:
   input:
     # Figure 1 plot
     dc_tap_x_qpcr_fig1 = "results/main_figure_1_and_2/compare_k562_effect_sizes_to_qPCR/comparison_positive_controls.pdf",
+    wtc11_multi_moi_fig1 = "results/main_figure_1_and_2/wtc11_multi_moi.pdf",
+    read_umi_saturation_comparison = "results/main_figure_1_and_2/downsampling_reads_for_UMIs/read_umi_saturation_comparison.pdf",
     # Figure 2 plots
     k562_distance_by_es_fig2 = "results/main_figure_1_and_2/k562_distance_by_es.pdf",
     wtc11_distance_by_es_fig2 = "results/main_figure_1_and_2/wtc11_distance_by_es.pdf",
@@ -49,3 +52,27 @@ rule create_all_supplementary_tables:
     wtc11_guide_targets_supp_table = "results/supplementary_tables/wtc11_guide_targets_supp_table.tsv"
   output:
     touch("results/supplementary_tables/create_all_supplementary_tables.done")
+
+
+
+
+
+
+
+
+
+# Run differential expression with sceptre's dev branch to get confidence intervals
+rule sceptre_dev_differential_expression_w_confidence_intervals_klann:
+  input:
+    sceptre_diffex_input = "temp_{sample}_w_CIs/sceptre_diffex_input.rds"
+  output:
+    discovery_results = "temp_{sample}_w_CIs/results_run_discovery_analysis.rds",
+    final_sceptre_object = "temp_{sample}_w_CIs/final_sceptre_object.rds"
+  log: "temp_{sample}_w_CIs/logs/sceptre_dev_differential_expression_w_confidence_intervals.log"
+  conda:
+    "envs/sceptre_dev_for_CIs.yml"
+  resources:
+    mem = "32G",
+    time = "12:00:00"
+  script:
+    "../temp_klann_w_CIs/sceptre_dev_differential_expression_w_confidence_intervals.R"

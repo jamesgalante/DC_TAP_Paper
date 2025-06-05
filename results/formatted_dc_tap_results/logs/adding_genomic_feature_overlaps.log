@@ -1,11 +1,11 @@
 Loading in packages
 There were 13 warnings (use warnings() to see them)
 Loading input files
-Rows: 14049 Columns: 29
+Rows: 14049 Columns: 32
 ── Column specification ────────────────────────────────────────────────────────
 Delimiter: "\t"
 chr (14): chrom, name, hg19_target_coords, chrTSS, measuredGeneSymbol, Valid...
-dbl (13): chromStart, chromEnd, EffectSize, startTSS, endTSS, pValueAdjusted...
+dbl (16): chromStart, chromEnd, EffectSize, startTSS, endTSS, pValueAdjusted...
 lgl  (2): Significant, Regulated
 
 ℹ Use `spec()` to retrieve the full column specification for this data.

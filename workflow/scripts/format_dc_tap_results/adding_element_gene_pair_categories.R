@@ -217,6 +217,9 @@ final_output <- combined_joined_w_categories %>%
     Random_DistalElement_Gene, 
     
     # Power Simulation Results
+    power_at_effect_size_2 = PowerAtEffectSize2,
+    power_at_effect_size_3 = PowerAtEffectSize3,
+    power_at_effect_size_5 = PowerAtEffectSize5,
     power_at_effect_size_10 = PowerAtEffectSize10, 
     power_at_effect_size_15 = PowerAtEffectSize15, 
     power_at_effect_size_20 = PowerAtEffectSize20, 

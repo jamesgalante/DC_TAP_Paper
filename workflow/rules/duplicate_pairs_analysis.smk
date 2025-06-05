@@ -122,26 +122,26 @@ rule combine_sceptre_power_analysis_Gasperini:
   script:
     "../scripts/process_validation_datasets/sceptre_power_analysis/combine_sceptre_power_analysis.R"
 
-# # Compute the power from the power simulations
-# rule compute_power_from_simulations_Gasperini:
-#   input:
-#     combined_power_analysis_output = "results/main_figure_1_and_2/{sample}/power_analysis/combined_power_analysis_output_es_{effect_size}.tsv",
-#     discovery_results = "results/main_figure_1_and_2/{sample}/differential_expression/results_run_discovery_analysis.rds"
-#   output:
-#     power_analysis_results = "results/main_figure_1_and_2/{sample}/power_analysis/power_analysis_results_es_{effect_size}.tsv"
-#   log: "results/main_figure_1_and_2/logs/compute_power_from_simulations_Gasperini_{sample}_es{effect_size}.log"
-#   conda:
-#     "../envs/sceptre_power_simulations.yml"
-#   resources:
-#     mem = "24G",
-#     time = "1:00:00"
-#   script:
-#     "../scripts/process_validation_datasets/sceptre_power_analysis/compute_power_from_simulations.R"
+# Compute the power from the power simulations
+rule compute_power_from_simulations_Gasperini:
+  input:
+    combined_power_analysis_output = "results/main_figure_1_and_2/{sample}/power_analysis/combined_power_analysis_output_es_{effect_size}.tsv",
+    discovery_results = "results/main_figure_1_and_2/{sample}/differential_expression/results_run_discovery_analysis.rds"
+  output:
+    power_analysis_results = "results/main_figure_1_and_2/{sample}/power_analysis/power_analysis_results_es_{effect_size}.tsv"
+  log: "results/main_figure_1_and_2/logs/compute_power_from_simulations_Gasperini_{sample}_es{effect_size}.log"
+  conda:
+    "../envs/sceptre_power_simulations.yml"
+  resources:
+    mem = "24G",
+    time = "1:00:00"
+  script:
+    "../scripts/process_validation_datasets/sceptre_power_analysis/compute_power_from_simulations.R"
 
 # Format sceptre output for compatibility with ENCODE pipelines
 rule format_sceptre_output_Gasperini:
   input:
-    power_analysis_results = expand("results/main_figure_1_and_2/{{sample}}/power_analysis/power_analysis_results_es_{effect_size}.tsv", effect_size = [0.10, 0.15, 0.20, 0.25, 0.50]),
+    power_analysis_results = expand("results/main_figure_1_and_2/{{sample}}/power_analysis/power_analysis_results_es_{effect_size}.tsv", effect_size = [0.02, 0.03, 0.05, 0.10, 0.15, 0.20, 0.25, 0.50]),
     discovery_results = "results/main_figure_1_and_2/{sample}/differential_expression/results_run_discovery_analysis.rds",
     gene_gRNA_group_pairs = "results/main_figure_1_and_2/{sample}/gene_gRNA_group_pairs.rds",
     guide_targets = "resources/main_figure_1_and_2/duplicate_pairs_analysis/guide_targets.tsv",

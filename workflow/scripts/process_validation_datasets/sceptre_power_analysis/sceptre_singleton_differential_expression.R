@@ -1,4 +1,4 @@
-# Script: # Script: sceptre_singleton_differential_expression.R
+# Script: sceptre_singleton_differential_expression.R
 
 ### SETUP =====================================================================
 
@@ -16,12 +16,6 @@ sink(log, type = "message")
 
 
 ### LOADING FILES =============================================================
-
-# Download Sceptre
-# library(devtools)
-# message("Installing Sceptre")
-# devtools::install_github("katsevich-lab/sceptre")
-# message("Sceptre Installation Complete")
 
 message("Loading in packages")
 suppressPackageStartupMessages({

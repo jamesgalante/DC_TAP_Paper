@@ -18,7 +18,7 @@ Analysis status:
 	✓ run_discovery_analysis()
 
 Analysis parameters: 
-	• Discovery pairs: data frame with 7556 pairs (102610 after pairwise QC)
+	• Discovery pairs: data frame with 7533 pairs (102310 after pairwise QC)
 	• Positive control pairs: data frame with 0 pairs
 	• Sidedness of test: both
 	• Resampling mechanism: conditional resampling
@@ -35,6 +35,6 @@ gRNA-to-cell assignment information:
 	• Mean N gRNAs per cell (MOI): 7.34
 
 Summary of results:
-	• N negative control pairs called as significant: 47/102610
+	• N negative control pairs called as significant: 47/102310
 	• Mean log-2 FC for negative control pairs: 0.0014
-	• N discovery pairs called as significant: 1219/102610
+	• N discovery pairs called as significant: 1222/102310

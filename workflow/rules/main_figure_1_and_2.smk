@@ -1,4 +1,21 @@
 
+# Run sceptre differential expression with "singleton"
+rule sceptre_singleton_differential_expression:
+  input:
+    sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds",
+    gene_gRNA_group_pairs = "results/process_validation_datasets/{sample}/gene_gRNA_group_pairs.rds"
+  output:
+    discovery_results = "results/process_validation_datasets/{sample}/singleton_differential_expression/results_run_discovery_analysis.rds",
+    final_sceptre_object = "results/process_validation_datasets/{sample}/singleton_differential_expression/final_sceptre_object.rds"
+  log: "results/process_validation_datasets/{sample}/singleton_differential_expression/singleton_discovery_results.log"
+  conda:
+    "../envs/all_packages.yml"
+  resources:
+    mem = "32G",
+    time = "12:00:00"
+  script:
+    "../scripts/process_validation_datasets/sceptre_power_analysis/sceptre_singleton_differential_expression.R"
+
 # Create distance by effect size plots
 rule distance_by_effect_size_plots:
   input:
@@ -31,11 +48,33 @@ rule effect_size_plots:
   script:
     "../scripts/main_figure_1_and_2/effect_size_plots.R" 
     
+# Group the non-targeting guides under one grna_group (not as a negative control) to get the se_fold_change of all negative controls together
+rule negative_targeting_confidence_interval:
+  input:
+    gene_gRNA_group_pairs = "results/process_validation_datasets/{sample}/gene_gRNA_group_pairs.rds",
+    gRNA_groups_table = "results/process_validation_datasets/{sample}/gRNA_groups_table.rds",
+    metadata = "results/process_validation_datasets/{sample}/metadata.rds",
+    dge = "results/process_validation_datasets/{sample}/raw_counts/dge.rds",
+    perturb_status = "results/process_validation_datasets/{sample}/raw_counts/perturb_status.rds"
+  output:
+    discovery_results = "results/main_figure_1_and_2/negative_controls_differential_expression_w_confidence_intervals_{sample}/results_run_discovery_analysis.rds",
+    final_sceptre_object = "results/main_figure_1_and_2/negative_controls_differential_expression_w_confidence_intervals_{sample}/final_sceptre_object.rds"
+  log: "results/formatted_dc_tap_results/logs/negative_controls_differential_expression_w_confidence_intervals_{sample}.log"
+  conda:
+    "../envs/sceptre_dev_for_CIs.yml"
+  resources:
+    mem = "32G",
+    time = "12:00:00"
+  script:
+    "../scripts/main_figure_1_and_2/negative_controls_differential_expression_w_confidence_intervals.R"
+    
 # Plot for SLC2A3|chr12:7960676-7960977 Effect Sizes compared to Negative Controls
 rule slc2a3_effect_size_plot:
   input:
     results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv",
-    wtc11_calibration_check_results = "results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_WTC11_DC_TAP_Seq/results_run_calibration_check.rds"
+    wtc11_calibration_check_results = "results/process_validation_datasets/WTC11_DC_TAP_Seq/singleton_differential_expression/results_run_calibration_check.rds",
+    wtc11_singleton_results = "results/process_validation_datasets/WTC11_DC_TAP_Seq/singleton_differential_expression/results_run_discovery_analysis.rds",
+    negative_controls_together = "results/main_figure_1_and_2/negative_controls_differential_expression_w_confidence_intervals_WTC11_DC_TAP_Seq/results_run_discovery_analysis.rds"
   output:
     slc2a3_effect_size_barplot = "results/main_figure_1_and_2/slc2a3_effect_size_barplot.pdf"
   log: "results/main_figure_1_and_2/logs/slc2a3_effect_size_plot.log"
@@ -114,9 +153,6 @@ rule compare_k562_effect_sizes_to_qPCR:
 # Downsampling Analysis Rule
 rule downsampling_reads_for_UMIs:
   input:
-    # DC-TAP-seq (MOI6) files
-    moi6_mol_info = "resources/main_figure_1_and_2/downsampling_reads_for_UMIs/moi6_fixed/molecule_info.h5",
-    moi6_filtered_h5 = "resources/main_figure_1_and_2/downsampling_reads_for_UMIs/moi6_fixed/filtered_feature_bc_matrix.h5",
     # CRISPRi Direct Capture files
     crisprdi_mol_info = "resources/main_figure_1_and_2/downsampling_reads_for_UMIs/crisprdi_direct_capture/molecule_info.h5",
     crisprdi_filtered_h5 = "resources/main_figure_1_and_2/downsampling_reads_for_UMIs/crisprdi_direct_capture/filtered_feature_bc_matrix.h5",
@@ -125,16 +161,15 @@ rule downsampling_reads_for_UMIs:
     moi3_filtered_h5 = "resources/main_figure_1_and_2/downsampling_reads_for_UMIs/moi3_fixed/filtered_feature_bc_matrix.h5"
   output:
     plot_pdf = "results/main_figure_1_and_2/downsampling_reads_for_UMIs/read_umi_saturation_comparison.pdf",
-    plot_png = "results/main_figure_1_and_2/downsampling_reads_for_UMIs/read_umi_saturation_comparison.png",
     combined_results = "results/main_figure_1_and_2/downsampling_reads_for_UMIs/combined_results.csv"
   log: "results/main_figure_1_and_2/logs/downsampling_reads_for_UMIs.log"
   conda:
-    "../envs/python_env.yml"
+    "../envs/downsampling.yml"
   resources:
     mem = "32G",
     time = "4:00:00"
   script:
-    "../scripts/main_figure_1_and_2/downsampling_reads_for_UMIs.py"
+    "../scripts/main_figure_1_and_2/downsampling_reads_for_UMIs.R"
 
 # Duplicates Analysis
 # Because this analysis requires many rules, most of the analysis was moved to duplicate_pairs_analysis.smk
@@ -152,3 +187,17 @@ rule find_duplicate_pairs:
     time = "1:00:00"
   script:
     "../scripts/main_figure_1_and_2/find_duplicate_pairs.R"
+
+rule wtc11_multi_moi:
+  input:
+    wtc11_multi_moi = "resources/main_figure_1_and_2/wtc11_multi_moi/wtc11_all_moi_mast_tab.txt"
+  output:
+    wtc11_multi_moi_plot = "results/main_figure_1_and_2/wtc11_multi_moi.pdf"
+  log: "results/main_figure_1_and_2/logs/wtc11_multi_moi.log"
+  conda:
+    "../envs/all_packages.yml"
+  resources:
+    mem = "8G",
+    time = "1:00:00"
+  script:
+    "../scripts/main_figure_1_and_2/wtc11_multi_moi.R"

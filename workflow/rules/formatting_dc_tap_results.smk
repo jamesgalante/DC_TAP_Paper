@@ -9,21 +9,21 @@ rule download_TSS_500bp_bed_file:
   shell:
     "wget -O {output} {params.url}"
 
-# # Run differential expression with sceptre's dev branch to get confidence intervals
-# rule sceptre_dev_differential_expression_w_confidence_intervals:
-#   input:
-#     sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds"
-#   output:
-#     discovery_results = "results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_{sample}/results_run_discovery_analysis.rds",
-#     final_sceptre_object = "results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_{sample}/final_sceptre_object.rds"
-#   log: "results/formatted_dc_tap_results/logs/sceptre_dev_differential_expression_w_confidence_intervals_{sample}.log"
-#   conda:
-#     "../envs/sceptre_dev_for_CIs.yml"
-#   resources:
-#     mem = "32G",
-#     time = "12:00:00"
-#   script:
-#     "../scripts/format_dc_tap_results/sceptre_dev_differential_expression_w_confidence_intervals.R" 
+# Run differential expression with sceptre's dev branch to get confidence intervals
+rule sceptre_dev_differential_expression_w_confidence_intervals:
+  input:
+    sceptre_diffex_input = "results/process_validation_datasets/{sample}/differential_expression/sceptre_diffex_input.rds"
+  output:
+    discovery_results = "results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_{sample}/results_run_discovery_analysis.rds",
+    final_sceptre_object = "results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_{sample}/final_sceptre_object.rds"
+  log: "results/formatted_dc_tap_results/logs/sceptre_dev_differential_expression_w_confidence_intervals_{sample}.log"
+  conda:
+    "../envs/sceptre_dev_for_CIs.yml"
+  resources:
+    mem = "32G",
+    time = "12:00:00"
+  script:
+    "../scripts/format_dc_tap_results/sceptre_dev_differential_expression_w_confidence_intervals.R"
 
 # Rule to get numbers for the paper
 rule adding_design_file_information:
@@ -57,22 +57,22 @@ rule adding_genomic_feature_overlaps:
   script:
     "../scripts/format_dc_tap_results/adding_genomic_feature_overlaps.R"
     
-# # Creating categories to define the Random Set, Promoters, Valid Distal Element Gene pairs, etc.
-# rule adding_element_gene_pair_categories:
-#   input:
-#     results_with_design_file_and_genomic_feature_overlaps = "results/formatted_dc_tap_results/results_with_design_file_and_genomic_feature_overlaps.tsv",
-#     guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"]),
-#     create_ensemble_encode_input = expand("results/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_{sample}_0.13gStd_Sceptre_perCRE_0.8pwrAt15effect_GRCh38.tsv.gz", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
-#   output:
-#     results_with_element_gene_pair_categories = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories.tsv"
-#   log: "results/formatted_dc_tap_results/logs/adding_element_gene_pair_categories.log"
-#   conda:
-#     "../envs/analyze_crispr_screen.yml"
-#   resources:
-#     mem = "32G",
-#     time = "2:00:00"
-#   script:
-#     "../scripts/format_dc_tap_results/adding_element_gene_pair_categories.R"
+# Creating categories to define the Random Set, Promoters, Valid Distal Element Gene pairs, etc.
+rule adding_element_gene_pair_categories:
+  input:
+    results_with_design_file_and_genomic_feature_overlaps = "results/formatted_dc_tap_results/results_with_design_file_and_genomic_feature_overlaps.tsv",
+    guide_targets = expand("results/process_validation_datasets/{sample}/guide_targets.tsv", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"]),
+    create_ensemble_encode_input = expand("results/create_encode_output/ENCODE/EPCrisprBenchmark/ENCODE_{sample}_0.13gStd_Sceptre_perCRE_0.8pwrAt15effect_GRCh38.tsv.gz", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
+  output:
+    results_with_element_gene_pair_categories = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories.tsv"
+  log: "results/formatted_dc_tap_results/logs/adding_element_gene_pair_categories.log"
+  conda:
+    "../envs/analyze_crispr_screen.yml"
+  resources:
+    mem = "32G",
+    time = "2:00:00"
+  script:
+    "../scripts/format_dc_tap_results/adding_element_gene_pair_categories.R"
 
 # Rule to deal with specific pairs
 # In this rule, I also create summary tables of the screen results for each category and add confidence intervals from a separate sceptre run using sceptre's dev branch

@@ -1,0 +1,62 @@
+Loading in packages
+Loading input files
+Rows: 131421 Columns: 51
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (16): intended_target_name_hg38, targeting_chr_hg38, intended_target_nam...
+dbl (30): targeting_start_hg38, targeting_end_hg38, targeting_start_hg19, ta...
+lgl  (5): significant, abc_tss_overlap, DistalElement_Gene, DistalPromoter_G...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 14049 Columns: 64
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (25): intended_target_name_hg38, targeting_chr_hg38, intended_target_nam...
+dbl (32): targeting_start_hg38, targeting_end_hg38, targeting_start_hg19, ta...
+lgl  (7): significant, DistalElement_Gene, DistalPromoter_Gene, selfPromoter...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 27762 Columns: 34
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (11): chrom, name, strandPerturbationTarget, PerturbationTargetID, chrTS...
+dbl (17): chromStart, chromEnd, EffectSize, startTSS, endTSS, pValue, pValue...
+lgl  (6): EffectSize95ConfidenceIntervalLow, EffectSize95ConfidenceIntervalH...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 1190 Columns: 34
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (11): chrom, name, strandPerturbationTarget, PerturbationTargetID, chrTS...
+dbl (17): chromStart, chromEnd, EffectSize, startTSS, endTSS, pValue, pValue...
+lgl  (6): EffectSize95ConfidenceIntervalLow, EffectSize95ConfidenceIntervalH...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 3775 Columns: 34
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (11): chrom, name, strandPerturbationTarget, PerturbationTargetID, chrTS...
+dbl (17): chromStart, chromEnd, EffectSize, startTSS, endTSS, pValue, pValue...
+lgl  (6): EffectSize95ConfidenceIntervalLow, EffectSize95ConfidenceIntervalH...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 6617 Columns: 34
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (11): chrom, name, strandPerturbationTarget, PerturbationTargetID, chrTS...
+dbl (17): chromStart, chromEnd, EffectSize, startTSS, endTSS, pValue, pValue...
+lgl  (6): EffectSize95ConfidenceIntervalLow, EffectSize95ConfidenceIntervalH...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Calculating power proportions for all effect sizes (2%, 3%, 5%, 10%, 15%, 20%, 25%, 50%)
+Creating proportion plot
+Creating count plot
+Saving proportion plot
+Saving count plot
+Closing log file

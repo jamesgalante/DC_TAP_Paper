@@ -41,7 +41,7 @@ rule split_target_response_pairs:
     batches = N_BATCHES
   log: "results/process_validation_datasets/{sample}/logs/split_target_response_pairs.log"
   conda:
-    "../envs/sceptre_power_simulations.yml"
+    "../envs/all_packages.yml"
   resources:
     mem = "24G",
     time = "2:00:00"
@@ -61,7 +61,7 @@ rule sceptre_power_analysis:
     reps = config["process_validation_datasets"]["power_analysis"]["n_reps"]
   log: "results/process_validation_datasets/{sample}/logs/sceptre_power_analysis_es{effect_size}_split{split}.log"
   conda:
-    "../envs/sceptre_power_simulations.yml"
+    "../envs/all_packages.yml"
   resources:
     mem = "8G",
     time = "1:00:00"
@@ -76,7 +76,7 @@ rule combine_sceptre_power_analysis:
    combined_power_analysis_output = "results/process_validation_datasets/{sample}/power_analysis/combined_power_analysis_output_es_{effect_size}.tsv"
  log: "results/process_validation_datasets/{sample}/logs/combine_sceptre_power_analysis_es{effect_size}.log"
  conda:
-   "../envs/sceptre_power_simulations.yml"
+   "../envs/all_packages.yml"
  resources:
    mem = "32G",
    time = "2:00:00"
@@ -92,7 +92,7 @@ rule compute_power_from_simulations:
     power_analysis_results = "results/process_validation_datasets/{sample}/power_analysis/power_analysis_results_es_{effect_size}.tsv"
   log: "results/process_validation_datasets/{sample}/logs/compute_power_from_simulations_es{effect_size}.log"
   conda:
-    "../envs/sceptre_power_simulations.yml"
+    "../envs/all_packages.yml"
   resources:
     mem = "24G",
     time = "1:00:00"
@@ -102,7 +102,7 @@ rule compute_power_from_simulations:
 # Format sceptre output for compatibility with ENCODE pipelines
 rule format_sceptre_output:
   input:
-    power_analysis_results = expand("results/process_validation_datasets/{{sample}}/power_analysis/power_analysis_results_es_{effect_size}.tsv", effect_size = [0.10, 0.15, 0.20, 0.25, 0.50]),
+    power_analysis_results = expand("results/process_validation_datasets/{{sample}}/power_analysis/power_analysis_results_es_{effect_size}.tsv", effect_size = [0.02, 0.03, 0.05, 0.10, 0.15, 0.20, 0.25, 0.50]),
     discovery_results = "results/process_validation_datasets/{sample}/differential_expression/results_run_discovery_analysis.rds",
     gene_gRNA_group_pairs = "results/process_validation_datasets/{sample}/gene_gRNA_group_pairs.rds",
     distances = "results/process_validation_datasets/{sample}/distances.tsv",
