@@ -6,6 +6,7 @@ channels:
   - r
 dependencies:
   - bioconductor-rhdf5
+  - r-hdf5r
   - r-base
   - r-tidyverse
   - r-seurat

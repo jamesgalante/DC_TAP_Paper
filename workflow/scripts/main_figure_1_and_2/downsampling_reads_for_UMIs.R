@@ -20,17 +20,13 @@ message("Loading packages")
 suppressPackageStartupMessages({
   library(tidyverse)
   library(rhdf5)
+  library(hdf5r)
   library(Seurat)
 })
 
 message("Loading input files")
 # Get dataset paths from Snakemake input object
 datasets <- list(
-  list(
-    name = "DC-TAP-seq (MOI6)",
-    mol_info = snakemake@input$moi6_mol_info,
-    filtered_h5 = snakemake@input$moi6_filtered_h5
-  ),
   list(
     name = "CRISPRi Direct Capture",
     mol_info = snakemake@input$crisprdi_mol_info,
@@ -146,6 +142,23 @@ process_dataset <- function(dataset) {
     stringsAsFactors = FALSE
   )
   
+  # Subsample genes for CRISPRi Direct Capture dataset
+  if(name == "CRISPRi Direct Capture") {
+    set.seed(42)  # For reproducibility
+    n_genes <- nrow(counts)
+    message(paste("Original", name, "has", n_genes, "genes"))
+    
+    if(n_genes > 4000) {
+      message(paste("Subsampling", name, "from", n_genes, "to 2000 genes"))
+      sampled_indices <- sample(n_genes, 2000)
+      counts <- counts[sampled_indices, ]
+      gene_info <- gene_info[sampled_indices, ]
+      message(paste("After subsampling:", name, "now has", nrow(counts), "genes"))
+    } else {
+      message(paste(name, "has", n_genes, "genes, which is already <= 2000, so no subsampling needed"))
+    }
+  }
+  
   # Read in molecule_info.h5
   message("Reading molecule info file...")
   
@@ -188,8 +201,8 @@ process_dataset <- function(dataset) {
   gene_map <- setNames(gene_info$gene_names, gene_info$gene_ids)
   molecule_info$gene_name <- gene_map[molecule_info$feature_idx]
   
-  # Filter to only the 93 amplified genes that are in your counts matrix
-  # This removes the other ~35,000 genes you don't care about
+  # Filter to only genes that are in your (potentially subsampled) counts matrix
+  # For CRISPRi Direct Capture, this will now be only the 2000 sampled genes
   molecule_info <- molecule_info[!is.na(molecule_info$gene_name), ]
   
   # Filter to cells in the counts matrix
@@ -197,6 +210,7 @@ process_dataset <- function(dataset) {
   reads_df <- molecule_info[molecule_info$barcode_idx %in% cell_barcodes, ]
   
   message(paste("Final dataset has", nrow(reads_df), "molecular observations for analysis"))
+  message(paste("Covering", length(unique(reads_df$gene_name)), "unique genes"))
   
   # Run the downsampling analysis
   return(get_complexity_df(reads_df, name))
@@ -241,6 +255,7 @@ saturation_plot <- ggplot(combined_results, aes(x = mean_reads_per_cell, y = mea
     color = "Dataset"
   ) +
   theme_classic() +
+  xlim(0, 1000) +
   theme(
     plot.title = element_text(size = 16, face = "bold"),
     axis.title = element_text(size = 14),
@@ -258,12 +273,10 @@ message("Analysis complete. Saving outputs...")
 message("Saving output files")
 
 # Save the raw results
-write_csv(combined_results, "combined_results.tsv")
 write_csv(combined_results, snakemake@output$combined_results)
 
 # Save plots
-ggsave(filename = snakemake@output$plot_pdf, plot = saturation_plot, width = 10, height = 6, device = "pdf")
-saveRDS(saturation_plot, file = "saturation_plot.rds")
+ggsave(filename = snakemake@output$plot_pdf, plot = saturation_plot, width = 5, height = 3, device = "pdf")
 
 
 ### CLEAN UP ==================================================================

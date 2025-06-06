@@ -42,7 +42,13 @@ rule create_main_figure_1_and_2:
     touch("results/main_figure_1_and_2/create_main_figure_1_and_2.done")
     
 # Main Figure 3
-# rule create_main_figure_3:
+rule create_main_figure_3:
+  input:
+    effect_size_comparison = "results/main_figure_3/compare_effect_sizes_to_other_screens/effect_size_comparison.pdf",
+    power_for_all_datasets_by_proportion = "results/main_figure_3/power_to_detect_change_for_all_datasets/power_for_all_datasets_by_proportion.pdf",
+    power_for_all_datasets_by_count = "results/main_figure_3/power_to_detect_change_for_all_datasets/power_for_all_datasets_by_count.pdf"
+  output:
+    touch("results/main_figure_3/craete_main_figure_3.done")
     
 # Create the supplementary tables
 rule create_all_supplementary_tables:
@@ -52,27 +58,3 @@ rule create_all_supplementary_tables:
     wtc11_guide_targets_supp_table = "results/supplementary_tables/wtc11_guide_targets_supp_table.tsv"
   output:
     touch("results/supplementary_tables/create_all_supplementary_tables.done")
-
-
-
-
-
-
-
-
-
-# Run differential expression with sceptre's dev branch to get confidence intervals
-rule sceptre_dev_differential_expression_w_confidence_intervals_klann:
-  input:
-    sceptre_diffex_input = "temp_{sample}_w_CIs/sceptre_diffex_input.rds"
-  output:
-    discovery_results = "temp_{sample}_w_CIs/results_run_discovery_analysis.rds",
-    final_sceptre_object = "temp_{sample}_w_CIs/final_sceptre_object.rds"
-  log: "temp_{sample}_w_CIs/logs/sceptre_dev_differential_expression_w_confidence_intervals.log"
-  conda:
-    "envs/sceptre_dev_for_CIs.yml"
-  resources:
-    mem = "32G",
-    time = "12:00:00"
-  script:
-    "../temp_klann_w_CIs/sceptre_dev_differential_expression_w_confidence_intervals.R"
