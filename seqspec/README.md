@@ -18,7 +18,10 @@ pip install click jinja2
 To generate YAML files from a TSV of sample metadata, use the `fill_seqspec_template.py` script from the repository root:
 
 ```bash
+# To generate YAML files for CRISPR modality, run:
 python fill_seqspec_template.py --tsv example/example_crispr.tsv --modality crispr --output-dir output/
+# To generate YAML files for RNA modality, run:
+python fill_seqspec_template.py --tsv example/example_crispr.tsv --modality rna --output-dir output/
 ```
 
 - `--tsv`: Path to your input TSV file (see below for structure).
@@ -49,13 +52,13 @@ The TSV file should have a header row with columns matching the template variabl
 | read2_url                        | URL to download read 2 file                                                 | https://api.data.igvf.org/sequence-files/IGVFFI4996PJUB/@@download/IGVFFI4996PJUB.fastq.gz |
 | read2_urltype                    | URL type for read 2 (e.g., http, ftp)                                       | https |
 | read2_md5                        | MD5 checksum for read 2 file                                                | d41d8cd98f00b204e9800998ecf8427e |
-| crispr_cell_barcode_file_id      | File ID for cell barcode onlist                                             | IGVFFI4996PJUC.txt |
-| crispr_cell_barcode_file_name    | Filename for cell barcode onlist                                            | IGVFFI4996PJUC |
-| crispr_cell_barcode_file_type    | File type for cell barcode onlist (e.g., txt)                               | txt |
-| crispr_cell_barcode_file_size    | Size (bytes) of cell barcode onlist file                                    | 123456789 |
-| crispr_cell_barcode_file_url     | URL to download cell barcode onlist file                                    | https://api.data.igvf.org/sequence-files/IGVFFI4996PJUC/@@download/IGVFFI4996PJUC.txt |
-| crispr_cell_barcode_file_urltype | URL type for cell barcode onlist file (e.g., http, ftp)                     | https |
-| crispr_cell_barcode_file_md5     | MD5 checksum for cell barcode onlist file                                   | d41d8cd98f00b204e9800998ecf8427e |
+| cell_barcode_file_id      | File ID for cell barcode onlist                                             | IGVFFI4996PJUC.txt |
+| cell_barcode_file_name    | Filename for cell barcode onlist                                            | IGVFFI4996PJUC |
+| cell_barcode_file_type    | File type for cell barcode onlist (e.g., txt)                               | txt |
+| cell_barcode_file_size    | Size (bytes) of cell barcode onlist file                                    | 123456789 |
+| cell_barcode_file_url     | URL to download cell barcode onlist file                                    | https://api.data.igvf.org/sequence-files/IGVFFI4996PJUC/@@download/IGVFFI4996PJUC.txt |
+| cell_barcode_file_urltype | URL type for cell barcode onlist file (e.g., http, ftp)                     | https |
+| cell_barcode_file_md5     | MD5 checksum for cell barcode onlist file                                   | d41d8cd98f00b204e9800998ecf8427e |
 | crispr_guides_file_id            | File ID for guides onlist                                                   | IGVFFI4996PJUD.txt |
 | crispr_guides_file_name          | Filename for guides onlist                                                  | IGVFFI4996PJUD |
 | crispr_guides_file_type          | File type for guides onlist (e.g., txt)                                     | txt |
@@ -65,7 +68,7 @@ The TSV file should have a header row with columns matching the template variabl
 | crispr_guides_file_md5           | MD5 checksum for guides onlist file                                         | d41d8cd98f00b204e9800998ecf8427e |
 
 **Note:**  
-- For the `rna` modality, column requirements may differ depending on the template.
+- For the `rna` modality, you can leave the crispr_guide_* columns empty.
 - See example/example_crispr.tsv` for a sample TSV.
 
 ---
