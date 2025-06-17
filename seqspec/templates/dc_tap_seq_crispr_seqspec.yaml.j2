@@ -55,8 +55,8 @@ library_spec:
   name: crispr
   sequence_type: joined
   sequence: TCGTCGGCAGCGTCAGATGTGTATAAGAGACAGNNNNNNNNNNNNNNNNXXXXXXXXXXXXTTGCTAGGACCGGCCTTAAAGCGGCCAAGTTGATAACGGACTAGCCTTATTTAAACTTGCTATGCTGTTTCCAGCTTAGCTCTTAAACNNNNNNNNNNNNNNNNNNNNCCCATGTACTCTGCGTTGATACCACTGCTTAGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
-  min_len: 203
-  max_len: 203
+  min_len: 233
+  max_len: 233
   onlist: null
   regions:
   - !Region
@@ -71,21 +71,21 @@ library_spec:
     regions: null
     parent_id: crispr
   - !Region
-    region_id: crispr-cell_barcode
+    region_id: cell_barcode
     region_type: barcode
-    name: crispr-cell_barcode
+    name: cell_barcode
     sequence_type: onlist
     sequence: NNNNNNNNNNNNNNNN
     min_len: 16
     max_len: 16
     onlist: !Onlist
-        file_id: "{{ crispr_cell_barcode_file_id}}"
-        filename: "{{ crispr_cell_barcode_file_name }}"
-        filetype: "{{ crispr_cell_barcode_file_type }}"
-        filesize: {{ crispr_cell_barcode_file_size }}
-        url: "{{ crispr_cell_barcode_file_url }}"
-        urltype: "{{ crispr_cell_barcode_file_urltype }}"
-        md5: "{{ crispr_cell_barcode_file_md5 }}"
+      file_id: "{{ cell_barcode_file_id}}"
+      filename: "{{ cell_barcode_file_name }}"
+      filetype: "{{ cell_barcode_file_type }}"
+      filesize: {{ cell_barcode_file_size }}
+      url: "{{ cell_barcode_file_url }}"
+      urltype: "{{ cell_barcode_file_urltype }}"
+      md5: "{{ cell_barcode_file_md5 }}"
     regions: null
     parent_id: crispr
   - !Region
