@@ -8,6 +8,4 @@ This directory contains code, intermediate files, and results used for the inter
   - `other_crispr_screens.categorized.tsv.gz`: same as above but for CRISPR perturbation data from 8 other studies
   - `all_gw_pairs.categorized.summary.tsv`
   - `thresholds.tsv`: quantiles for various chromatin features for distal elements in 5 cell types used for categorization
- 
-
-
+  - `dc_tapseq_indirect_effects.Rmd`: explore and analyze probability of direct effects and create results shown in Figure 4 and Figure S3
