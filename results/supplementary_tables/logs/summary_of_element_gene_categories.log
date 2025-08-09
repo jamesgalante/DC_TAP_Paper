@@ -19,6 +19,5 @@ lgl  (9): significant, DistalElement_Gene, DistalPromoter_Gene, selfPromoter...
 ℹ Use `spec()` to retrieve the full column specification for this data.
 ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 Calculating summary statistics by cell type
-Error in rbind(k562_summary, wtc11_summary) : 
-  object 'k562_summary' not found
-Execution halted
+Saving output files
+Closing log file

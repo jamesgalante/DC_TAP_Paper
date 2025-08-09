@@ -3,7 +3,7 @@
 ## threshold (positives pass filter regardless of power). If specified removes all invalid
 ## connections based on ValidConnection column before writing to output. Also removes any pairs not
 ## within specified distance to TSS range
-save.image("RDA_objects/filter_crispr_dataset.rda")
+save.image(paste0("RDA_objects/filter_crispr_dataset", snakemake@wildcards$sample, ".rda"))
 
 # required packages
 suppressPackageStartupMessages({
