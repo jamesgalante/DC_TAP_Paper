@@ -72,7 +72,10 @@ plot_distance_by_es <- function(df, cell_type_to_plot) {
       legend.position = "bottom"
     )
   
+  # Suppress automatic PDF creation that ggMarginal can trigger
+  pdf(NULL)
   p <- ggMarginal(p, type = "density", margins = "both", groupColour = TRUE, groupFill = FALSE)
+  dev.off()
   
   return(p)
 }
