@@ -44,6 +44,7 @@ results/genome_annotation_files/*
 
 # OTHER ----------
 ARCHIVE/*
+ARCHIVE.tar.gz
 .snakemake/*
 
 # RDA objects directory

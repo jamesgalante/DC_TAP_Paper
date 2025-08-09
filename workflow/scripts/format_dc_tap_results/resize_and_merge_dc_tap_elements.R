@@ -23,7 +23,7 @@ suppressPackageStartupMessages({
 })
 
 message("Loading input files")
-results_with_element_gene_pair_categories_modified <- read_tsv(snakemake@input$results_with_element_gene_pair_categories_modified)
+results_wo_pos_controls <- read_tsv(snakemake@input$results_wo_pos_controls)
 
 
 ### RESIZE AND MERGE FUNCTIONS ================================================
@@ -77,8 +77,8 @@ resize_crispr_elements <- function(crispr, size = 500) {
 
 message("Resizing and merging elements")
 # Merge elements for DC-TAP-seq datasets
-k562_dc_tap <- resize_crispr_elements(filter(results_with_element_gene_pair_categories_modified, cell_type == "K562"), size = 500)
-wtc11_dc_tap <- resize_crispr_elements(filter(results_with_element_gene_pair_categories_modified, cell_type == "WTC11"), size = 500)
+k562_dc_tap <- resize_crispr_elements(filter(results_wo_pos_controls, cell_type == "K562"), size = 500)
+wtc11_dc_tap <- resize_crispr_elements(filter(results_wo_pos_controls, cell_type == "WTC11"), size = 500)
 
 # Combine with other CRISPR data to create new combined file
 formatted_resized_and_merged_dc_tap_output <- bind_rows(k562_dc_tap, wtc11_dc_tap)

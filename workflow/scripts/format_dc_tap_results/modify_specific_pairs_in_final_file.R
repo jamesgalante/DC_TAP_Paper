@@ -46,59 +46,6 @@ modified_pairs <- element_gene_pairs %>%
   )
 
 
-### CALCULATE SUMMARY STATISTICS ==============================================
-
-message("Calculating summary statistics by cell type")
-
-# Helper functions for summarizing pair stats
-summarize_pairs <- function(df, category, cell_type) {
-  # Get significant pair stats (upregulated vs downregulated)
-  sig_stats <- df %>%
-    filter(!!sym(category), significant == TRUE, cell_type == !!cell_type) %>%
-    summarize(
-      Upregulated = sum(pct_change_effect_size >= 0),
-      Downregulated = sum(pct_change_effect_size < 0)
-    )
-  
-  # Get non-significant pair stats (well-powered vs underpowered)
-  nonsig_stats <- df %>%
-    filter(!!sym(category), significant == FALSE, cell_type == !!cell_type) %>%
-    summarize(
-      WellPowered = sum(power_at_effect_size_15 >= 0.8),
-      UnderPowered = sum(power_at_effect_size_15 < 0.8)
-    )
-  
-  # Combine the stats
-  tibble(
-    Category = category,
-    Upregulated = sig_stats$Upregulated,
-    Downregulated = sig_stats$Downregulated,
-    WellPowered = nonsig_stats$WellPowered,
-    UnderPowered = nonsig_stats$UnderPowered
-  )
-}
-
-# Categories to summarize
-categories <- c(
-  "DistalElement_Gene",
-  "selfPromoter",
-  "DistalPromoter_Gene",
-  "Positive_Control_DistalElement_Gene",
-  "Positive_Control_selfPromoter", 
-  "Random_DistalElement_Gene"
-)
-
-# Generate summary tables for each cell type
-summary_K562 <- map_dfr(categories, ~summarize_pairs(modified_pairs, .x, "K562"))
-summary_WTC11 <- map_dfr(categories, ~summarize_pairs(modified_pairs, .x, "WTC11"))
-
-# Display summary tables for verification
-message("Summary statistics for K562:")
-print(summary_K562)
-message("\nSummary statistics for WTC11:")
-print(summary_WTC11)
-
-
 ### ADD IN CONFIDENCE INTERVALS ===============================================
 
 # Add in the k562 and wtc11 results by gene_id + design_file_target_name + cell_type
@@ -144,8 +91,6 @@ final_pairs <- modified_pairs %>%
 # Save output files
 message("Saving output files")
 write_tsv(final_pairs, snakemake@output$results_with_element_gene_pair_categories_modified)
-write_tsv(summary_K562, snakemake@output$summary_K562)
-write_tsv(summary_WTC11, snakemake@output$summary_WTC11)
 
 
 ### CLEAN UP ==================================================================

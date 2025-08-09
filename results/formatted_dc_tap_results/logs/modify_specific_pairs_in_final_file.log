@@ -19,27 +19,5 @@ lgl  (7): significant, DistalElement_Gene, DistalPromoter_Gene, selfPromoter...
 ℹ Use `spec()` to retrieve the full column specification for this data.
 ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 Modifying specific element-gene pairs
-Calculating summary statistics by cell type
-Summary statistics for K562:
-# A tibble: 6 × 5
-  Category                    Upregulated Downregulated WellPowered UnderPowered
-  <chr>                             <int>         <int>       <int>        <int>
-1 DistalElement_Gene                   32            42        1894         3172
-2 selfPromoter                          0           118          11           31
-3 DistalPromoter_Gene                  27            18        1058          987
-4 Positive_Control_DistalEle…           0            20           5            9
-5 Positive_Control_selfPromo…           0            32           2            5
-6 Random_DistalElement_Gene            31            19        1874         3135
-
-Summary statistics for WTC11:
-# A tibble: 6 × 5
-  Category                    Upregulated Downregulated WellPowered UnderPowered
-  <chr>                             <int>         <int>       <int>        <int>
-1 DistalElement_Gene                   27            55        2841         1695
-2 selfPromoter                          0            92          10           16
-3 DistalPromoter_Gene                  19            15        1221          522
-4 Positive_Control_DistalEle…           0             0           1            1
-5 Positive_Control_selfPromo…           0             4           0            3
-6 Random_DistalElement_Gene            26            55        2835         1691
 Saving output files
 Closing log file

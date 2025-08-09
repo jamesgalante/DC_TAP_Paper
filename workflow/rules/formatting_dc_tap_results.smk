@@ -74,16 +74,12 @@ rule adding_element_gene_pair_categories:
   script:
     "../scripts/format_dc_tap_results/adding_element_gene_pair_categories.R"
 
-# Rule to deal with specific pairs
-# In this rule, I also create summary tables of the screen results for each category and add confidence intervals from a separate sceptre run using sceptre's dev branch
 rule modify_specific_pairs_in_final_file:
   input:
     results_with_element_gene_pair_categories = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories.tsv",
     discovery_results_w_CIs = expand("results/formatted_dc_tap_results/differential_expression_w_confidence_intervals_{sample}/results_run_discovery_analysis.rds", sample = ["K562_DC_TAP_Seq", "WTC11_DC_TAP_Seq"])
   output:
-    results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv",
-    summary_K562 = "results/formatted_dc_tap_results/summary_K562.tsv",
-    summary_WTC11 = "results/formatted_dc_tap_results/summary_WTC11.tsv"
+    results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv"
   log: "results/formatted_dc_tap_results/logs/modify_specific_pairs_in_final_file.log"
   conda:
     "../envs/analyze_crispr_screen.yml"
@@ -92,11 +88,28 @@ rule modify_specific_pairs_in_final_file:
     time = "2:00:00"
   script:
     "../scripts/format_dc_tap_results/modify_specific_pairs_in_final_file.R"
- 
+
+# Add the significance results with FDR correction on non-positive controls
+rule add_results_wo_positive_controls:
+  input:
+    results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv",
+    combined_power_analysis_output_K562 = expand("results/process_validation_datasets/K562_DC_TAP_Seq/power_analysis/combined_power_analysis_output_es_{es}.tsv", es = [0.02, 0.03, 0.05, 0.10, 0.15, 0.20, 0.25, 0.50]),
+    combined_power_analysis_output_WTC11 = expand("results/process_validation_datasets/WTC11_DC_TAP_Seq/power_analysis/combined_power_analysis_output_es_{es}.tsv", es = [0.02, 0.03, 0.05, 0.10, 0.15, 0.20, 0.25, 0.50])
+  output:
+    results_wo_pos_controls = "results/formatted_dc_tap_results/results_wo_pos_controls.tsv"
+  log: "results/formatted_dc_tap_results/logs/add_results_wo_positive_controls.log"
+  conda:
+    "../envs/sceptre_dev_for_CIs.yml"
+  resources:
+    mem = "32G",
+    time = "2:00:00"
+  script:
+    "../scripts/format_dc_tap_results/add_results_wo_positive_controls.R"
+
 # Resize the elements to 500bp and merge overlapping elements for compatibility with chromatin category overlap pipeline
 rule resize_and_merge_dc_tap_elements_for_chromatin_categories:
   input:
-    results_with_element_gene_pair_categories_modified = "results/formatted_dc_tap_results/results_with_element_gene_pair_categories_modified.tsv",
+    results_wo_pos_controls = "results/formatted_dc_tap_results/results_wo_pos_controls.tsv",
   output:
     resized_and_merged_input_for_chromatin_categorization_pipeline = "results/formatted_dc_tap_results/resized_and_merged_input_for_chromatin_categorization_pipeline.tsv"
   log: "results/formatted_dc_tap_results/logs/resize_and_merge_dc_tap_elements.log"

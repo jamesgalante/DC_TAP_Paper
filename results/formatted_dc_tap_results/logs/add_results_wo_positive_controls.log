@@ -1,0 +1,161 @@
+Loading in packages
+Loading input files
+Rows: 14049 Columns: 56
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (19): intended_target_name_hg38, targeting_chr_hg38, intended_target_nam...
+dbl (30): targeting_start_hg38, targeting_end_hg38, targeting_start_hg19, ta...
+lgl  (7): significant, DistalElement_Gene, DistalPromoter_Gene, selfPromoter...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 749300 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 749300 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 749300 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 749300 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 749300 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 749300 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 749300 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 749300 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 657400 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 657400 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 657400 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 657400 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 657400 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 657400 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 657400 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 657400 Columns: 11
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (2): response_id, grna_target
+dbl (7): n_nonzero_trt, n_nonzero_cntrl, p_value, log_2_fold_change, num_per...
+lgl (2): pass_qc, significant
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Applying custom FDR correction excluding positive controls
+Recalculating power for wo_pos_controls significance threshold for all effect sizes
+Max nominal p-value for K562 wo_pos_controls: 0.000953820404176549
+Max nominal p-value for WTC11 wo_pos_controls: 0.00163840886542108
+Saving output files
+Closing log file
