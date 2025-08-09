@@ -1,0 +1,251 @@
+cell_type	element_category	distance_category	ubiq_category	n_pairs
+K562	CTCF element	0-10 kb	Other gene	2567
+K562	CTCF element	0-10 kb	Ubiq. expr. gene	488
+K562	CTCF element	1 Mb-2 Mb	Other gene	246405
+K562	CTCF element	1 Mb-2 Mb	Ubiq. expr. gene	67458
+K562	CTCF element	10-100 kb	Other gene	27869
+K562	CTCF element	10-100 kb	Ubiq. expr. gene	7147
+K562	CTCF element	100-250 kb	Other gene	44523
+K562	CTCF element	100-250 kb	Ubiq. expr. gene	12327
+K562	CTCF element	250 kb-1 Mb	Other gene	203465
+K562	CTCF element	250 kb-1 Mb	Ubiq. expr. gene	56688
+K562	H3K27ac	0-10 kb	Other gene	11538
+K562	H3K27ac	0-10 kb	Ubiq. expr. gene	2807
+K562	H3K27ac	1 Mb-2 Mb	Other gene	595027
+K562	H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	159278
+K562	H3K27ac	10-100 kb	Other gene	86989
+K562	H3K27ac	10-100 kb	Ubiq. expr. gene	23700
+K562	H3K27ac	100-250 kb	Other gene	127926
+K562	H3K27ac	100-250 kb	Ubiq. expr. gene	34417
+K562	H3K27ac	250 kb-1 Mb	Other gene	524419
+K562	H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	143629
+K562	H3K27me3 element	0-10 kb	Other gene	679
+K562	H3K27me3 element	0-10 kb	Ubiq. expr. gene	31
+K562	H3K27me3 element	1 Mb-2 Mb	Other gene	58726
+K562	H3K27me3 element	1 Mb-2 Mb	Ubiq. expr. gene	15146
+K562	H3K27me3 element	10-100 kb	Other gene	6896
+K562	H3K27me3 element	10-100 kb	Ubiq. expr. gene	1668
+K562	H3K27me3 element	100-250 kb	Other gene	11525
+K562	H3K27me3 element	100-250 kb	Ubiq. expr. gene	3431
+K562	H3K27me3 element	250 kb-1 Mb	Other gene	50991
+K562	H3K27me3 element	250 kb-1 Mb	Ubiq. expr. gene	14189
+K562	High H3K27ac	0-10 kb	Other gene	4735
+K562	High H3K27ac	0-10 kb	Ubiq. expr. gene	1192
+K562	High H3K27ac	1 Mb-2 Mb	Other gene	156264
+K562	High H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	40947
+K562	High H3K27ac	10-100 kb	Other gene	23560
+K562	High H3K27ac	10-100 kb	Ubiq. expr. gene	6328
+K562	High H3K27ac	100-250 kb	Other gene	34534
+K562	High H3K27ac	100-250 kb	Ubiq. expr. gene	9411
+K562	High H3K27ac	250 kb-1 Mb	Other gene	139294
+K562	High H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	37641
+K562	No H3K27ac	0-10 kb	Other gene	5017
+K562	No H3K27ac	0-10 kb	Ubiq. expr. gene	855
+K562	No H3K27ac	1 Mb-2 Mb	Other gene	380802
+K562	No H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	104733
+K562	No H3K27ac	10-100 kb	Other gene	50300
+K562	No H3K27ac	10-100 kb	Ubiq. expr. gene	13310
+K562	No H3K27ac	100-250 kb	Other gene	77264
+K562	No H3K27ac	100-250 kb	Ubiq. expr. gene	21754
+K562	No H3K27ac	250 kb-1 Mb	Other gene	332377
+K562	No H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	93271
+GM12878	CTCF element	0-10 kb	Other gene	2216
+GM12878	CTCF element	0-10 kb	Ubiq. expr. gene	494
+GM12878	CTCF element	1 Mb-2 Mb	Other gene	180949
+GM12878	CTCF element	1 Mb-2 Mb	Ubiq. expr. gene	50218
+GM12878	CTCF element	10-100 kb	Other gene	22121
+GM12878	CTCF element	10-100 kb	Ubiq. expr. gene	5957
+GM12878	CTCF element	100-250 kb	Other gene	33440
+GM12878	CTCF element	100-250 kb	Ubiq. expr. gene	9287
+GM12878	CTCF element	250 kb-1 Mb	Other gene	149543
+GM12878	CTCF element	250 kb-1 Mb	Ubiq. expr. gene	42160
+GM12878	H3K27ac	0-10 kb	Other gene	10795
+GM12878	H3K27ac	0-10 kb	Ubiq. expr. gene	2787
+GM12878	H3K27ac	1 Mb-2 Mb	Other gene	523744
+GM12878	H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	142418
+GM12878	H3K27ac	10-100 kb	Other gene	71028
+GM12878	H3K27ac	10-100 kb	Ubiq. expr. gene	19263
+GM12878	H3K27ac	100-250 kb	Other gene	107599
+GM12878	H3K27ac	100-250 kb	Ubiq. expr. gene	29540
+GM12878	H3K27ac	250 kb-1 Mb	Other gene	456880
+GM12878	H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	126583
+GM12878	H3K27me3 element	0-10 kb	Other gene	220
+GM12878	H3K27me3 element	0-10 kb	Ubiq. expr. gene	11
+GM12878	H3K27me3 element	1 Mb-2 Mb	Other gene	8403
+GM12878	H3K27me3 element	1 Mb-2 Mb	Ubiq. expr. gene	2350
+GM12878	H3K27me3 element	10-100 kb	Other gene	953
+GM12878	H3K27me3 element	10-100 kb	Ubiq. expr. gene	288
+GM12878	H3K27me3 element	100-250 kb	Other gene	1657
+GM12878	H3K27me3 element	100-250 kb	Ubiq. expr. gene	507
+GM12878	H3K27me3 element	250 kb-1 Mb	Other gene	6991
+GM12878	H3K27me3 element	250 kb-1 Mb	Ubiq. expr. gene	2123
+GM12878	High H3K27ac	0-10 kb	Other gene	4197
+GM12878	High H3K27ac	0-10 kb	Ubiq. expr. gene	902
+GM12878	High H3K27ac	1 Mb-2 Mb	Other gene	147408
+GM12878	High H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	42015
+GM12878	High H3K27ac	10-100 kb	Other gene	20988
+GM12878	High H3K27ac	10-100 kb	Ubiq. expr. gene	5457
+GM12878	High H3K27ac	100-250 kb	Other gene	30724
+GM12878	High H3K27ac	100-250 kb	Ubiq. expr. gene	9208
+GM12878	High H3K27ac	250 kb-1 Mb	Other gene	128249
+GM12878	High H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	37030
+GM12878	No H3K27ac	0-10 kb	Other gene	5421
+GM12878	No H3K27ac	0-10 kb	Ubiq. expr. gene	1493
+GM12878	No H3K27ac	1 Mb-2 Mb	Other gene	418537
+GM12878	No H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	110956
+GM12878	No H3K27ac	10-100 kb	Other gene	48235
+GM12878	No H3K27ac	10-100 kb	Ubiq. expr. gene	12611
+GM12878	No H3K27ac	100-250 kb	Other gene	76476
+GM12878	No H3K27ac	100-250 kb	Ubiq. expr. gene	19964
+GM12878	No H3K27ac	250 kb-1 Mb	Other gene	348512
+GM12878	No H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	94796
+HCT116	CTCF element	0-10 kb	Other gene	1637
+HCT116	CTCF element	0-10 kb	Ubiq. expr. gene	239
+HCT116	CTCF element	1 Mb-2 Mb	Other gene	205983
+HCT116	CTCF element	1 Mb-2 Mb	Ubiq. expr. gene	56396
+HCT116	CTCF element	10-100 kb	Other gene	18940
+HCT116	CTCF element	10-100 kb	Ubiq. expr. gene	4445
+HCT116	CTCF element	100-250 kb	Other gene	32133
+HCT116	CTCF element	100-250 kb	Ubiq. expr. gene	8404
+HCT116	CTCF element	250 kb-1 Mb	Other gene	161091
+HCT116	CTCF element	250 kb-1 Mb	Ubiq. expr. gene	43174
+HCT116	H3K27ac	0-10 kb	Other gene	8675
+HCT116	H3K27ac	0-10 kb	Ubiq. expr. gene	2122
+HCT116	H3K27ac	1 Mb-2 Mb	Other gene	546410
+HCT116	H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	145530
+HCT116	H3K27ac	10-100 kb	Other gene	72513
+HCT116	H3K27ac	10-100 kb	Ubiq. expr. gene	20164
+HCT116	H3K27ac	100-250 kb	Other gene	110515
+HCT116	H3K27ac	100-250 kb	Ubiq. expr. gene	30402
+HCT116	H3K27ac	250 kb-1 Mb	Other gene	476985
+HCT116	H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	130293
+HCT116	H3K27me3 element	0-10 kb	Other gene	155
+HCT116	H3K27me3 element	0-10 kb	Ubiq. expr. gene	8
+HCT116	H3K27me3 element	1 Mb-2 Mb	Other gene	36153
+HCT116	H3K27me3 element	1 Mb-2 Mb	Ubiq. expr. gene	9893
+HCT116	H3K27me3 element	10-100 kb	Other gene	1892
+HCT116	H3K27me3 element	10-100 kb	Ubiq. expr. gene	308
+HCT116	H3K27me3 element	100-250 kb	Other gene	4115
+HCT116	H3K27me3 element	100-250 kb	Ubiq. expr. gene	956
+HCT116	H3K27me3 element	250 kb-1 Mb	Other gene	25803
+HCT116	H3K27me3 element	250 kb-1 Mb	Ubiq. expr. gene	6516
+HCT116	High H3K27ac	0-10 kb	Other gene	3926
+HCT116	High H3K27ac	0-10 kb	Ubiq. expr. gene	932
+HCT116	High H3K27ac	1 Mb-2 Mb	Other gene	157624
+HCT116	High H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	42685
+HCT116	High H3K27ac	10-100 kb	Other gene	22859
+HCT116	High H3K27ac	10-100 kb	Ubiq. expr. gene	6390
+HCT116	High H3K27ac	100-250 kb	Other gene	33700
+HCT116	High H3K27ac	100-250 kb	Ubiq. expr. gene	9765
+HCT116	High H3K27ac	250 kb-1 Mb	Other gene	139922
+HCT116	High H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	38964
+HCT116	No H3K27ac	0-10 kb	Other gene	2783
+HCT116	No H3K27ac	0-10 kb	Ubiq. expr. gene	370
+HCT116	No H3K27ac	1 Mb-2 Mb	Other gene	350320
+HCT116	No H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	91680
+HCT116	No H3K27ac	10-100 kb	Other gene	34298
+HCT116	No H3K27ac	10-100 kb	Ubiq. expr. gene	7851
+HCT116	No H3K27ac	100-250 kb	Other gene	58415
+HCT116	No H3K27ac	100-250 kb	Ubiq. expr. gene	15085
+HCT116	No H3K27ac	250 kb-1 Mb	Other gene	281994
+HCT116	No H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	73616
+Jurkat	CTCF element	0-10 kb	Other gene	2296
+Jurkat	CTCF element	0-10 kb	Ubiq. expr. gene	456
+Jurkat	CTCF element	1 Mb-2 Mb	Other gene	217991
+Jurkat	CTCF element	1 Mb-2 Mb	Ubiq. expr. gene	59900
+Jurkat	CTCF element	10-100 kb	Other gene	23267
+Jurkat	CTCF element	10-100 kb	Ubiq. expr. gene	6122
+Jurkat	CTCF element	100-250 kb	Other gene	37146
+Jurkat	CTCF element	100-250 kb	Ubiq. expr. gene	10020
+Jurkat	CTCF element	250 kb-1 Mb	Other gene	174106
+Jurkat	CTCF element	250 kb-1 Mb	Ubiq. expr. gene	48031
+Jurkat	H3K27ac	0-10 kb	Other gene	8691
+Jurkat	H3K27ac	0-10 kb	Ubiq. expr. gene	1992
+Jurkat	H3K27ac	1 Mb-2 Mb	Other gene	522782
+Jurkat	H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	140029
+Jurkat	H3K27ac	10-100 kb	Other gene	66926
+Jurkat	H3K27ac	10-100 kb	Ubiq. expr. gene	17533
+Jurkat	H3K27ac	100-250 kb	Other gene	103291
+Jurkat	H3K27ac	100-250 kb	Ubiq. expr. gene	27370
+Jurkat	H3K27ac	250 kb-1 Mb	Other gene	449490
+Jurkat	H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	122814
+Jurkat	H3K27me3 element	0-10 kb	Other gene	230
+Jurkat	H3K27me3 element	0-10 kb	Ubiq. expr. gene	26
+Jurkat	H3K27me3 element	1 Mb-2 Mb	Other gene	26072
+Jurkat	H3K27me3 element	1 Mb-2 Mb	Ubiq. expr. gene	6908
+Jurkat	H3K27me3 element	10-100 kb	Other gene	2329
+Jurkat	H3K27me3 element	10-100 kb	Ubiq. expr. gene	518
+Jurkat	H3K27me3 element	100-250 kb	Other gene	4145
+Jurkat	H3K27me3 element	100-250 kb	Ubiq. expr. gene	976
+Jurkat	H3K27me3 element	250 kb-1 Mb	Other gene	20561
+Jurkat	H3K27me3 element	250 kb-1 Mb	Ubiq. expr. gene	5027
+Jurkat	High H3K27ac	0-10 kb	Other gene	3335
+Jurkat	High H3K27ac	0-10 kb	Ubiq. expr. gene	756
+Jurkat	High H3K27ac	1 Mb-2 Mb	Other gene	141323
+Jurkat	High H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	38253
+Jurkat	High H3K27ac	10-100 kb	Other gene	19014
+Jurkat	High H3K27ac	10-100 kb	Ubiq. expr. gene	4737
+Jurkat	High H3K27ac	100-250 kb	Other gene	28268
+Jurkat	High H3K27ac	100-250 kb	Ubiq. expr. gene	7482
+Jurkat	High H3K27ac	250 kb-1 Mb	Other gene	120762
+Jurkat	High H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	33998
+Jurkat	No H3K27ac	0-10 kb	Other gene	4235
+Jurkat	No H3K27ac	0-10 kb	Ubiq. expr. gene	831
+Jurkat	No H3K27ac	1 Mb-2 Mb	Other gene	386048
+Jurkat	No H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	107459
+Jurkat	No H3K27ac	10-100 kb	Other gene	42203
+Jurkat	No H3K27ac	10-100 kb	Ubiq. expr. gene	11887
+Jurkat	No H3K27ac	100-250 kb	Other gene	68839
+Jurkat	No H3K27ac	100-250 kb	Ubiq. expr. gene	20092
+Jurkat	No H3K27ac	250 kb-1 Mb	Other gene	318554
+Jurkat	No H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	90464
+WTC11	CTCF element	0-10 kb	Other gene	1642
+WTC11	CTCF element	0-10 kb	Ubiq. expr. gene	292
+WTC11	CTCF element	1 Mb-2 Mb	Other gene	145765
+WTC11	CTCF element	1 Mb-2 Mb	Ubiq. expr. gene	40221
+WTC11	CTCF element	10-100 kb	Other gene	15594
+WTC11	CTCF element	10-100 kb	Ubiq. expr. gene	3768
+WTC11	CTCF element	100-250 kb	Other gene	24928
+WTC11	CTCF element	100-250 kb	Ubiq. expr. gene	6753
+WTC11	CTCF element	250 kb-1 Mb	Other gene	117073
+WTC11	CTCF element	250 kb-1 Mb	Ubiq. expr. gene	32697
+WTC11	H3K27ac	0-10 kb	Other gene	7731
+WTC11	H3K27ac	0-10 kb	Ubiq. expr. gene	1650
+WTC11	H3K27ac	1 Mb-2 Mb	Other gene	626969
+WTC11	H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	173095
+WTC11	H3K27ac	10-100 kb	Other gene	72104
+WTC11	H3K27ac	10-100 kb	Ubiq. expr. gene	19776
+WTC11	H3K27ac	100-250 kb	Other gene	115310
+WTC11	H3K27ac	100-250 kb	Ubiq. expr. gene	33634
+WTC11	H3K27ac	250 kb-1 Mb	Other gene	523372
+WTC11	H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	148964
+WTC11	H3K27me3 element	0-10 kb	Other gene	2498
+WTC11	H3K27me3 element	0-10 kb	Ubiq. expr. gene	175
+WTC11	H3K27me3 element	1 Mb-2 Mb	Other gene	141397
+WTC11	H3K27me3 element	1 Mb-2 Mb	Ubiq. expr. gene	39049
+WTC11	H3K27me3 element	10-100 kb	Other gene	15219
+WTC11	H3K27me3 element	10-100 kb	Ubiq. expr. gene	3883
+WTC11	H3K27me3 element	100-250 kb	Other gene	25639
+WTC11	H3K27me3 element	100-250 kb	Ubiq. expr. gene	7855
+WTC11	H3K27me3 element	250 kb-1 Mb	Other gene	114324
+WTC11	H3K27me3 element	250 kb-1 Mb	Ubiq. expr. gene	34147
+WTC11	High H3K27ac	0-10 kb	Other gene	2475
+WTC11	High H3K27ac	0-10 kb	Ubiq. expr. gene	526
+WTC11	High H3K27ac	1 Mb-2 Mb	Other gene	142641
+WTC11	High H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	37259
+WTC11	High H3K27ac	10-100 kb	Other gene	17324
+WTC11	High H3K27ac	10-100 kb	Ubiq. expr. gene	4606
+WTC11	High H3K27ac	100-250 kb	Other gene	26902
+WTC11	High H3K27ac	100-250 kb	Ubiq. expr. gene	7448
+WTC11	High H3K27ac	250 kb-1 Mb	Other gene	119465
+WTC11	High H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	31949
+WTC11	No H3K27ac	0-10 kb	Other gene	3568
+WTC11	No H3K27ac	0-10 kb	Ubiq. expr. gene	609
+WTC11	No H3K27ac	1 Mb-2 Mb	Other gene	402581
+WTC11	No H3K27ac	1 Mb-2 Mb	Ubiq. expr. gene	114219
+WTC11	No H3K27ac	10-100 kb	Other gene	42040
+WTC11	No H3K27ac	10-100 kb	Ubiq. expr. gene	10984
+WTC11	No H3K27ac	100-250 kb	Other gene	70560
+WTC11	No H3K27ac	100-250 kb	Ubiq. expr. gene	20495
+WTC11	No H3K27ac	250 kb-1 Mb	Other gene	334358
+WTC11	No H3K27ac	250 kb-1 Mb	Ubiq. expr. gene	98248

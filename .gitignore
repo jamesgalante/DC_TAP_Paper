@@ -54,3 +54,5 @@ RDA_objects/
 results/main_figure_1_and_2/logs/
 results/process_validation_datasets/K562_DC_TAP_Seq/logs/
 results/process_validation_datasets/WTC11_DC_TAP_Seq/logs/
+seqspec/.DS_Store
+seqspec/.python-version
