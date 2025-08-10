@@ -15,6 +15,8 @@ include: "rules/main_figure_1_and_2.smk"
 include: "rules/main_figure_3.smk"
 include: "rules/duplicate_pairs_analysis.smk"
 
+include: "rules/figures_wo_positive_controls.smk"
+
 # Perform all analyses to output benchmarked datasets
 rule all:
   input:

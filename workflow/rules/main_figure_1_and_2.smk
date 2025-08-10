@@ -9,7 +9,7 @@ rule sceptre_singleton_differential_expression:
     final_sceptre_object = "results/process_validation_datasets/{sample}/singleton_differential_expression/final_sceptre_object.rds"
   log: "results/process_validation_datasets/{sample}/singleton_differential_expression/singleton_discovery_results.log"
   conda:
-    "../envs/all_packages.yml"
+    "../envs/sceptre_dev_for_CIs.yml"
   resources:
     mem = "32G",
     time = "12:00:00"
